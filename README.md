@@ -5,8 +5,8 @@ A student-led algebra workspace in one file: [`math-ink.html`](math-ink.html). O
 ## Work a problem
 
 1. Type or handwrite the original equation, then press **Enter** or **Check My Step**. For example: `16 - 3p = 2/3p + 5`.
-2. Choose **+ − × ÷**, enter your operand, and select **Set up operation**. Each side appears vertically with the operation underneath, a horizontal line, and an empty result field.
-3. Calculate and enter **both** results. **Check My Step** saves them only when both match your chosen operation. Incorrect or missing results remain editable. You cannot stack another operation until you finish or cancel this one.
+2. Choose **+ − × ÷**, enter your operand, and select **Set up operation**. Each side appears as its own large, centered paper-style calculation: original side, operation underneath, horizontal rule, and an empty result field.
+3. Calculate and enter **both** results. **Check My Step** checks the sides independently. A correct side locks with a visible ✓ while an incorrect side stays editable; the checked vertical work remains in equation history. You cannot stack another operation until you finish or cancel this one.
 4. Continue with another operation, or type/handwrite an equivalent next equation. Three progressive hints offer guidance without filling answers.
 5. Open **Verify your final answer**, enter the variable value you found, and set up substitution. Calculate both sides of the *original* equation yourself. The app checks your calculations and whether the sides agree.
 
@@ -15,8 +15,8 @@ Math Ink never displays a generated algebra solution or fills the answer fields.
 ## Thinking tools
 
 - **Math keypad:** inserts at the cursor in the last selected math input; includes variables, fractions, parentheses, signs, and backspace.
-- **Fraction / LCD helper:** computes a common denominator, then checks a numerator you supply for an equivalent fraction. For example, practice `-3 = ? / 3`.
-- **Reciprocal helper:** checks your proposed reciprocal. You explicitly choose whether to use it on both sides.
+- **Fraction / LCD helper:** fraction steps identify a useful common denominator beside the vertical work without converting the numerator. The full helper checks a numerator you supply for an equivalent fraction. For example, practice `-3 = ? / 3`.
+- **Reciprocal helper:** division by a fraction asks you to enter and check its reciprocal before checking the side results. The general helper also lets you explicitly choose whether to use a checked reciprocal on both sides.
 - **Sign check:** requires a sign choice when multiplication/division involves a negative and a numeric right side.
 - **Scratchpad:** optional independent ink, with undo and clear. It is not recognized or transmitted.
 - **Progress:** cumulative checked steps, retries, hints, verified problems, skill counts, and recent mistake notes are stored in this browser's local storage. Worksheet history and ink are session-only. **New problem** clears the worksheet but retains progress.
@@ -31,7 +31,7 @@ Turn off **Tutor Mode** for unrestricted mathematical writing and the original o
 
 ## Supported math and notation
 
-Tutor checks support **one-variable linear equations**, integer/decimal/fraction coefficients, parentheses, distribution, and implicit multiplication such as `3p` or `2(x+1)`. Basic braced LaTeX fractions are accepted. `2/3p` means `(2/3)p`; use explicit parentheses to disambiguate division. Numeric calculations are exact, so rounded answers may not pass.
+Tutor checks support **one-variable linear equations** and numeric-only arithmetic practice, integer/decimal/fraction coefficients, parentheses, distribution, and implicit multiplication such as `3p` or `2(x+1)`. Basic braced LaTeX fractions are accepted. `2/3p` means `(2/3)p`; use explicit parentheses to disambiguate division. Numeric calculations are exact, so rounded answers may not pass.
 
 Nonlinear expressions, multiple variables, variable denominators, functions, and inequalities are not checked; use free writing for those. Multiplying/dividing both sides by zero or a variable is blocked in Tutor Mode. Numerical integer powers up to 10 are supported. Inputs are limited to 300 characters.
 
@@ -54,4 +54,4 @@ node --test tests/tutor-math.test.cjs
 
 Tests cover exact fractions/decimals, distribution, signs, equation solution-set preservation (including identities/contradictions), side-specific operation checks, unsupported math, and fraction rendering consistency.
 
-Browser smoke checks covered the full `16-3p=2/3p+5` workflow through student-entered `p=3` and `7=7` verification, wrong results, pending-operation guards, required signs, reciprocal and LCD/fraction helpers, keypad insertion, direct equivalent steps, handwriting symbol recognition/undo, and scratchpad controls.
+Browser smoke checks covered the full `16-3p=2/3p+5` workflow through student-entered `p=3` and `7=7` verification; `7=12` with `-6` entered independently as `1` and `6`; `5-5` entered as `0`; per-side retry/checkmarks; pending-operation guards; required signs; contextual reciprocal and LCD/fraction helpers; keypad insertion; direct equivalent steps; all three layouts; the original free-writing operation flow; handwriting visibility/undo; scratchpad controls; and a clean JavaScript console.

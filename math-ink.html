@@ -111,11 +111,28 @@
   #tutorPanel,#toolsPanel,#progressPanel{margin-bottom:14px;padding:20px;} .section-title{display:flex;justify-content:space-between;gap:16px;align-items:center;} #stage{font-size:12px;color:var(--muted);}
   .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:10px 0;} button{min-height:36px;} button:disabled{opacity:.45;cursor:not-allowed;} button.primary{color:var(--panel);} input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:7px;padding:9px;}
   [data-sign][aria-pressed="true"]{background:var(--accent);color:var(--panel);}
-  :focus-visible{outline:3px solid var(--accent);outline-offset:3px;} .vertical-grid{display:grid;grid-template-columns:minmax(0,1fr) 30px minmax(0,1fr);gap:16px;margin:24px 0;align-items:center;}
-  .arithmetic{text-align:right;min-width:0;} .math-row{font-size:22px;overflow-x:auto;min-height:44px;padding:8px 4px;} .math-row .katex-display{margin:0;text-align:right;}.math-row .katex-display>.katex{text-align:right;} .operation{border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:12px;} .math-input{width:100%;text-align:right;font:22px ui-monospace,monospace;min-height:52px;border:1px solid var(--accent);} .equals{text-align:center;font:28px Georgia,serif;} .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+  :focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
+  #verticalWork{max-width:920px;margin:0 auto;padding:8px 0 2px;}
+  .vertical-grid{display:grid;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr);gap:28px;margin:24px auto;align-items:center;}
+  .arithmetic{position:relative;text-align:right;min-width:0;max-width:390px;width:100%;margin-inline:auto;padding:18px 22px 20px;background:var(--bg);border:1px solid var(--line);border-radius:12px;}
+  .math-row{font-size:30px;overflow-x:auto;min-height:54px;padding:8px 6px;display:flex;align-items:center;justify-content:flex-end;}
+  .math-row .katex-display{margin:0;text-align:right;width:100%;}.math-row .katex-display>.katex{text-align:right;}
+  .operation{position:relative;border-bottom:3px solid var(--ink);padding-bottom:14px;margin-bottom:14px;}
+  .operation::before{content:attr(data-symbol);position:absolute;left:4px;bottom:14px;font:700 30px/1 Georgia,serif;color:var(--ink);}
+  .operation .katex .mord:first-child{margin-left:1.1em;}
+  .answer-wrap{position:relative;display:flex;align-items:center;gap:9px;}
+  .math-input{width:100%;text-align:right;font:28px ui-monospace,monospace;min-height:60px;border:2px solid var(--accent);padding-right:48px;}
+  .math-input.correct{border-color:#23855b;background:color-mix(in srgb,var(--panel) 78%,#4fce8c);}
+  .math-input.incorrect{border-color:var(--warn);background:color-mix(in srgb,var(--panel) 88%,var(--warn));}
+  .answer-mark{position:absolute;right:14px;font-size:25px;font-weight:800;pointer-events:none;}
+  .answer-mark.correct{color:#23855b}.answer-mark.incorrect{color:var(--warn)}
+  .equals{text-align:center;font:34px Georgia,serif;} .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+  .coach{margin:12px auto;padding:14px 16px;max-width:720px;border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:8px;}
+  .coach p{margin:0 0 8px}.coach .toolbar{margin-bottom:0}
+  .history-operation{margin:12px 34px 4px;opacity:.9}.history-operation .arithmetic{padding:10px 16px}.history-operation .math-row{font-size:21px;min-height:38px;padding:4px}.history-operation .operation{padding-bottom:8px;margin-bottom:8px;border-bottom-width:2px}.history-operation .operation::before{font-size:20px;bottom:8px}.history-answer{font:700 22px ui-monospace,monospace;color:#23855b;text-align:right;padding:4px 6px}.history-answer::after{content:'  ✓';}
   #tutorFeedback{padding:12px;background:var(--accent-soft);border-radius:8px;margin-bottom:0;} #tutorFeedback.error{color:var(--warn);} #hints{font-size:14px;line-height:1.7;} .keypad{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin:14px 0;}.keypad button{font-size:19px;padding:8px 0;}
   details{border-top:1px solid var(--line);padding:12px 0;} summary{cursor:pointer;font-weight:600;} .helper-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}.small-input{width:125px;max-width:100%;}.scratch-wrap{position:relative;height:210px;background-image:radial-gradient(var(--grid) 1px,transparent 1px);background-size:20px 20px;border:1px solid var(--line);border-radius:8px;margin:12px 0;} #progress{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;} .stat{padding:10px 16px;background:var(--bg);border-radius:8px;}.stat strong{display:block;font:26px Georgia,serif;} #skills{line-height:1.9;margin-top:10px;} #mistakeLog{font-size:13px;color:var(--muted);} #signCheck{padding:12px;background:var(--accent-soft);border-radius:8px;} [hidden]{display:none!important;} body.ink-hidden #board,body.ink-hidden #stripbar,body.ink-hidden #strip{display:none;} #opval{min-width:100px;} .line .x{opacity:1;} .line .eq{font-size:1.2em;}
-  @media(max-width:600px){.wrap{padding:12px;}.helper-grid{grid-template-columns:1fr;gap:0;}.keypad{grid-template-columns:repeat(5,1fr);}.vertical-grid{gap:7px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);}.math-row,.math-input{font-size:18px;}.section-title{display:block;} .tutor-intro h2{font-size:27px;} #status{width:100%;margin:0;} }
+  @media(max-width:600px){.wrap{padding:12px;}.helper-grid{grid-template-columns:1fr;gap:0;}.keypad{grid-template-columns:repeat(5,1fr);}.vertical-grid{gap:7px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);}.arithmetic{padding:12px 10px}.math-row,.math-input{font-size:19px}.operation::before{font-size:21px}.section-title{display:block;} .tutor-intro h2{font-size:27px;} #status{width:100%;margin:0;} }
 
 </style>
 </head>
@@ -152,13 +169,15 @@
     <div class="section-title"><h2>01 / Your next step</h2><span id="stage">Enter your equation below</span></div>
     <div id="verticalWork" hidden>
       <div class="vertical-grid">
-        <div class="arithmetic"><span class="side-label">LEFT SIDE</span><div id="leftBase" class="math-row"></div><div id="leftOp" class="math-row operation"></div><label class="sr-only" for="leftAnswer">Left side result</label><input id="leftAnswer" class="math-input" placeholder="Your result" autocomplete="off" spellcheck="false"></div>
+        <div class="arithmetic"><span class="side-label">LEFT SIDE</span><div id="leftBase" class="math-row"></div><div id="leftOp" class="math-row operation"></div><label class="sr-only" for="leftAnswer">Left side result</label><div class="answer-wrap"><input id="leftAnswer" class="math-input" placeholder="Your result" autocomplete="off" spellcheck="false"><span id="leftMark" class="answer-mark" aria-live="polite"></span></div></div>
         <span class="equals">=</span>
-        <div class="arithmetic"><span class="side-label">RIGHT SIDE</span><div id="rightBase" class="math-row"></div><div id="rightOp" class="math-row operation"></div><label class="sr-only" for="rightAnswer">Right side result</label><input id="rightAnswer" class="math-input" placeholder="Your result" autocomplete="off" spellcheck="false"></div>
+        <div class="arithmetic"><span class="side-label">RIGHT SIDE</span><div id="rightBase" class="math-row"></div><div id="rightOp" class="math-row operation"></div><label class="sr-only" for="rightAnswer">Right side result</label><div class="answer-wrap"><input id="rightAnswer" class="math-input" placeholder="Your result" autocomplete="off" spellcheck="false"><span id="rightMark" class="answer-mark" aria-live="polite"></span></div></div>
       </div>
       <div id="signCheck" hidden><span id="signPrompt"></span><input id="signAnswer" type="hidden"><div class="toolbar" role="group" aria-labelledby="signPrompt"><button data-sign="+" aria-pressed="false">Positive</button><button data-sign="-" aria-pressed="false">Negative</button><button data-sign="0" aria-pressed="false">Zero</button></div></div>
+      <div id="fractionCoach" class="coach" hidden><p id="fractionCoachText"></p><button id="openFractionHelper">Open fraction / LCD helper</button></div>
+      <div id="reciprocalCoach" class="coach" hidden><p>Dividing by a fraction is the same as multiplying by its reciprocal. Enter the reciprocal yourself before checking the arithmetic.</p><div class="toolbar"><input id="pendingReciprocal" class="small-input" aria-label="Reciprocal of the divisor" placeholder="Your reciprocal"><button id="checkPendingReciprocal">Check reciprocal</button><span id="pendingReciprocalOut" role="status"></span></div></div>
     </div>
-    <div class="toolbar"><button id="checkStep" class="primary">Check My Step</button><button id="hintStep">Hint</button><button id="cancelOp" hidden>Cancel operation</button></div>
+    <div class="toolbar"><button id="checkStep" class="primary">Check My Step</button><button id="hintStep" hidden>Hint</button><button id="cancelOp" hidden>Cancel operation</button></div>
     <p id="tutorFeedback" role="status" aria-live="polite">Start by typing or handwriting the original equation. You do every calculation.</p>
     <ol id="hints" aria-live="polite"></ol>
   </section>
@@ -585,7 +604,7 @@ function renderSheet() {
     if(ln.tutorOperation){
       const setup=document.createElement('div');setup.className='history-operation vertical-grid';
       const symbol={'+':'+','-':'−','*':'×','/':'÷'}[ln.tutorOperation.op];
-      ln.tutorOperation.sides.forEach((side,j)=>{if(j){const equal=document.createElement('span');equal.className='equals';equal.textContent='=';setup.append(equal);}const col=document.createElement('div');col.className='arithmetic';const base=document.createElement('div');base.className='math-row';typeset(base,toLatex(side));const op=document.createElement('div');op.className='math-row operation';typeset(op,toLatex(`${symbol} (${ln.tutorOperation.raw})`));col.append(base,op);setup.append(col);});sheet.append(setup);
+      ln.tutorOperation.sides.forEach((side,j)=>{if(j){const equal=document.createElement('span');equal.className='equals';equal.textContent='=';setup.append(equal);}const col=document.createElement('div');col.className='arithmetic';const base=document.createElement('div');base.className='math-row';typeset(base,toLatex(side));const op=document.createElement('div');op.className='math-row operation';op.dataset.symbol=symbol;typeset(op,toLatex(ln.tutorOperation.raw));const answer=document.createElement('div');answer.className='history-answer';answer.textContent=ln.tutorOperation.answers?.[j]||'';col.append(base,op,answer);setup.append(col);});sheet.append(setup);
     }
 
     const row = add(ln.texD, '', i + 1); row.title = tutorOn() ? 'Edit this line (following dependent steps will be removed)' : ln.op ? 'Click to change this operation' : ln.typed ? 'Click to edit this line' : 'Click to redraw this line';
@@ -850,7 +869,13 @@ function updateProgress(){
 }
 function record(skill,ok,detail=''){if(!stats.skills[skill]||typeof stats.skills[skill]!=='object')stats.skills[skill]={correct:0,retry:0};const entry=stats.skills[skill];entry[ok?'correct':'retry']=(Number(entry[ok?'correct':'retry'])||0)+1;if(!ok){stats.mistakes++;stats.log.push(`${skill}: ${detail}`);stats.log=stats.log.slice(-40);}updateProgress();}
 function resetHints(){hintLevel=0;$('hints').replaceChildren();}
-function clearPending(){document.querySelectorAll('[data-sign]').forEach(b=>b.setAttribute('aria-pressed','false'));pending=null;$('verticalWork').hidden=true;$('cancelOp').hidden=true;$('leftAnswer').value='';$('rightAnswer').value='';$('signAnswer').value='';resetHints();$('stage').textContent=lines.length?'Choose an operation or enter a step':'Enter your equation below';}
+function setAnswerState(side,state=''){
+  const input=$(side+'Answer'),mark=$(side+'Mark');
+  input.classList.remove('correct','incorrect');input.readOnly=false;mark.className='answer-mark';mark.textContent='';
+  if(state){input.classList.add(state);mark.classList.add(state);mark.textContent=state==='correct'?'✓':'!';}
+  if(state==='correct')input.readOnly=true;
+}
+function clearPending(){document.querySelectorAll('[data-sign]').forEach(b=>b.setAttribute('aria-pressed','false'));pending=null;$('verticalWork').hidden=true;$('cancelOp').hidden=true;$('hintStep').hidden=true;$('fractionCoach').hidden=true;$('reciprocalCoach').hidden=true;$('leftAnswer').value='';$('rightAnswer').value='';$('signAnswer').value='';$('pendingReciprocal').value='';$('pendingReciprocalOut').textContent='';setAnswerState('left');setAnswerState('right');resetHints();$('stage').textContent=lines.length?'Choose an operation or enter a step':'Enter your equation below';}
 function invalidateVerification(){verified=false;substitutionValue=null;$('verifyOut').textContent='';$('substitution').replaceChildren();$('verifyLeft').value='';$('verifyRight').value='';}
 function acceptTutorLine(src){
   lastCheckedOperation=null;
@@ -858,7 +883,7 @@ function acceptTutorLine(src){
   try{
     const next=TutorMath.equation(src);
     if(pending)return checkPending(src);
-    if(!lines.length){if(!next.variable)throw Error('Start with a one-variable equation.');original=src;invalidateVerification();feedback('Equation ready. Choose your next move, or enter a simplified equation.');resetHints();return true;}
+    if(!lines.length){original=src;invalidateVerification();$('stage').textContent='Choose an operation';feedback(next.variable?'Equation ready. Choose your next move, or enter a simplified equation.':'Arithmetic practice ready. Choose an operation to set up both sides vertically.');resetHints();return true;}
     const prev=TutorMath.equation(lines.at(-1).plain);
     if(!TutorMath.equivalent(prev,next)){record('Equation balance',false,'The new equation did not preserve the previous equation.');feedback('Not quite. Check the signs and apply the same change to both sides.',true);return false;}
     if(TutorMath.normalize(src)===TutorMath.normalize(lines.at(-1).plain)){feedback('This repeats the last line. Make a change before checking.',true);return false;}
@@ -874,16 +899,23 @@ function startTutorOp(op,raw){
     if(v.variable&&parsed.variable&&v.variable!==parsed.variable)throw Error('Use the same variable as your equation.');
     if((op==='*'||op==='/')&&(v.variable||!v.b.n))throw Error('Multiply or divide both sides by a nonzero number. A variable factor can change the solution set.');
     const expected=parsed.sides.map(s=>TutorMath.operation(s,raw,op));
-    pending={op,raw,sides:parsed.sides,expected,variable:parsed.variable,sign:null};resetHints();
+    pending={op,raw,sides:parsed.sides,expected,variable:parsed.variable,sign:null,reciprocalChecked:false};resetHints();
     const symbol={'+':'+','-':'−','*':'×','/':'÷'}[op];
-    ['left','right'].forEach((side,i)=>{typeset($(side+'Base'),toLatex(parsed.sides[i]));typeset($(side+'Op'),toLatex(`${symbol} (${raw})`));$(side+'Answer').value='';});
+    ['left','right'].forEach((side,i)=>{typeset($(side+'Base'),toLatex(parsed.sides[i]));$(side+'Op').dataset.symbol=symbol;typeset($(side+'Op'),toLatex(raw));$(side+'Answer').value='';setAnswerState(side);});
     // A numeric right side makes the sign question concrete, without revealing magnitude.
     if((op==='*'||op==='/')&&!parsed.r.a.n&&(parsed.r.b.n<0n||v.b.n<0n)){
       pending.sign=expected[1].b.n===0n?'0':expected[1].b.n<0n?'-':'+';
       $('signPrompt').textContent=`Sign check: ${parsed.r.b.n<0n?'negative':parsed.r.b.n===0n?'zero':'positive'} ${symbol} ${v.b.n<0n?'negative':'positive'} =`;
     }
-    $('signAnswer').value='';$('signCheck').hidden=!pending.sign;$('verticalWork').hidden=false;$('cancelOp').hidden=false;$('stage').textContent='Work out both sides';
-    feedback('Operation set up. Fill in both results below the lines, then check.');$('leftAnswer').focus();return true;
+    const denominatorMatches=[...parsed.sides,raw].flatMap(text=>[...TutorMath.normalize(text).matchAll(/\/(?:\()?([1-9]\d*)/g)].map(m=>BigInt(m[1])));
+    const uniqueDenominators=[...new Set(denominatorMatches.map(String))].map(value=>BigInt(value));
+    if(uniqueDenominators.length){const lcd=uniqueDenominators.reduce((a,b)=>a/TutorMath.gcd(a,b)*b);$('fractionCoachText').textContent=`Fractions spotted. A useful common denominator is ${lcd}. You choose and enter every converted numerator and result.`;$('fractionCoach').hidden=false;}else $('fractionCoach').hidden=true;
+    const divisor=op==='/'&&!v.variable?v.b:null;
+    pending.needsReciprocal=Boolean(divisor&&divisor.d!==1n);
+    $('reciprocalCoach').hidden=!pending.needsReciprocal;
+    $('pendingReciprocal').value='';$('pendingReciprocalOut').textContent='';
+    $('signAnswer').value='';$('signCheck').hidden=!pending.sign;$('verticalWork').hidden=false;$('cancelOp').hidden=false;$('hintStep').hidden=true;$('stage').textContent='Work out both sides';
+    $('opval').value='';feedback('Operation set up. Fill in both results below the lines, then check.');$('leftAnswer').focus();return true;
   }catch(e){feedback(e.message,true);return false;}
 }
 function checkPending(src){
@@ -892,17 +924,19 @@ function checkPending(src){
   try{
     const next=TutorMath.equation(src);
     if(next.variable&&p.variable&&next.variable!==p.variable)throw Error('Keep the same variable in your results.');
-    if(p.sign&&$('signAnswer').value!==p.sign){if(!$('signAnswer').value)throw Error('Choose the result’s sign before continuing.');record('Sign arithmetic',false,'Recheck the signs in multiplication or division.');throw Error('Recheck the sign: matching signs give positive; different signs give negative. Zero stays zero.');}
+    if(p.needsReciprocal&&!p.reciprocalChecked)throw Error('Enter and check the divisor’s reciprocal before checking this division step.');
+    if(p.sign&&$('signAnswer').value!==p.sign){$('hintStep').hidden=false;if(!$('signAnswer').value)throw Error('Choose the result’s sign before continuing.');record('Sign arithmetic',false,'Recheck the signs in multiplication or division.');throw Error('Recheck the sign rule, then try again. Use Hint if you want a more specific reminder.');}
     const ok=[TutorMath.same(next.l,p.expected[0]),TutorMath.same(next.r,p.expected[1])];
-    if(!ok.every(Boolean)){const side=ok[0]?'right':ok[1]?'left':'left and right';record('Combining like terms',false,`Recheck the ${side} result for ${p.op} (${p.raw}).`);throw Error(`Check the ${side} result. Combine variable terms with variable terms and constants with constants; watch each sign.`);}
+    setAnswerState('left',ok[0]?'correct':'incorrect');setAnswerState('right',ok[1]?'correct':'incorrect');
+    if(!ok.every(Boolean)){const side=ok[0]?'right':ok[1]?'left':'left and right';$('hintStep').hidden=false;record('Combining like terms',false,`Recheck the ${side} result for ${p.op} (${p.raw}).`);throw Error(`The ${side} result needs another look. Correct work is marked ✓; the other field stays editable. No answer has been filled in.`);}
     stats.steps++;record(p.op==='+'||p.op==='-'?'Variable movement':'Scaling both sides',true);if(p.sign)record('Sign arithmetic',true);
-    lastCheckedOperation={op:p.op,raw:p.raw,sides:p.sides};
+    lastCheckedOperation={op:p.op,raw:p.raw,sides:p.sides,answers:[next.sides[0].trim(),next.sides[1].trim()]};
     clearPending();invalidateVerification();feedback('Correct — both results check out. Your step is saved.');return true;
   }catch(e){feedback(e.message,true);return false;}
 }
 function appendTyped(src){const T=toLatex(src);lines.splice(editIdx===null?lines.length:editIdx,0,{tutorOperation:lastCheckedOperation,strokes:[],typed:true,src,tex:T,texD:T,plain:src,toks:[],slashMode:'frac'});editIdx=null;kb.value='';typedLive='';renderSheet();}
 async function checkStudentStep(){
-  if(pending){const l=$('leftAnswer').value.trim(),r=$('rightAnswer').value.trim();if(l||r){if(!l||!r){feedback('Fill in both answer fields before checking.',true);return;}const src=`${l} = ${r}`;if(checkPending(src))appendTyped(src);return;}}
+  if(pending){const l=$('leftAnswer').value.trim(),r=$('rightAnswer').value.trim();if(l||r){if(!l||!r){$('hintStep').hidden=false;feedback('Fill in both answer fields before checking. Each side is its own arithmetic problem.',true);return;}const src=`${l} = ${r}`;if(checkPending(src))appendTyped(src);return;}}
   if(kb.value.trim()){const src=kb.value.trim();if(acceptTutorLine(src))appendTyped(src);return;}
   if(strokes.length){await commit();return;}
   feedback(pending?'Fill in both results below the horizontal lines.':'Type or handwrite the equation you want to check.',true);
@@ -915,11 +949,22 @@ $('hintStep').onclick=()=>{
   if(!lines.length){feedback('Enter an equation first so the hints match your work.');return;}
   if(hintLevel>=3){feedback('All three hints are shown. Try the fraction or reciprocal helper, then check your work.');return;}
   let hints;
-  if(pending){const op=pending.op;hints=op==='+'||op==='-'?['Group variable terms separately from plain numbers. The operation belongs to each whole side.',op==='-'?'Subtracting a negative means adding its opposite. Keep the sign attached to each term.':'When adding terms with different signs, compare their sizes and keep the sign of the larger magnitude.','For fractional coefficients, rewrite each coefficient over a common denominator. Combine the numerators and keep the denominator.']:['Apply the factor or divisor to every term on each side.','Check signs first: matching signs give positive, different signs give negative.','To divide by a fraction, multiply by its reciprocal. Cancel common factors before multiplying.'];}
+  if(pending){
+    const hasFractions=!$('fractionCoach').hidden;
+    if(pending.sign)hints=['Decide the sign before calculating the size of the result.','Matching signs produce a positive result; different signs produce a negative result. Zero stays zero.','Apply that sign to each product or quotient, then simplify the numerical factors.'];
+    else if(hasFractions)hints=['Keep like terms together. Fraction coefficients combine with coefficients of the same variable.','Use the displayed common denominator. Multiply numerator and denominator by the same factor.','After the denominators match, combine only the numerators; keep the variable attached to its coefficient.'];
+    else if(pending.op==='+'||pending.op==='-')hints=['Treat each side as its own vertical arithmetic problem. Keep variable terms separate from constants.',pending.op==='-'?'Line up like terms and subtract the entire quantity, keeping its sign attached.':'Line up like terms and add their coefficients or constants.','A term cancels only when its coefficient becomes zero. Enter 0 when the whole side is zero.'];
+    else hints=['Apply the factor or divisor to every term on each side.','Check signs before multiplying or dividing the numerical factors.','If the divisor is a fraction, use the reciprocal you entered, then cancel common factors.'];
+  }
   else {hints=['Look for variable terms on both sides. What same operation could collect them on one side?','Use the opposite operation to remove a constant next to the variable. Keep the equation balanced.','Once you have a coefficient times the variable, divide by that nonzero coefficient or multiply by its reciprocal.'];}
   const li=document.createElement('li');li.textContent=hints[hintLevel++];$('hints').append(li);stats.hints++;updateProgress();
 };
-$('newProblem').onclick=()=>{clearTimeout(timer);version++;cur=null;lastCheckedOperation=null;lines=[];original=null;editIdx=null;strokes=[];kb.value='';typedLive='';clearPending();invalidateVerification();render([]);redraw();feedback('Ready for a new problem. Enter your equation.');kb.focus();};
+$('newProblem').onclick=()=>{clearTimeout(timer);version++;cur=null;lastCheckedOperation=null;lines=[];original=null;editIdx=null;strokes=[];kb.value='';typedLive='';$('opval').value='';setOp(null);clearPending();invalidateVerification();render([]);redraw();feedback('Ready for a new problem. Enter your equation.');kb.focus();};
+$('openFractionHelper').onclick=()=>{const details=$('denA').closest('details');details.open=true;details.scrollIntoView({behavior:'smooth',block:'center'});$('denA').focus();};
+$('checkPendingReciprocal').onclick=()=>{
+  if(!pending||!pending.needsReciprocal)return;
+  try{const divisor=TutorMath.constant(pending.raw),answer=TutorMath.constant($('pendingReciprocal').value);const ok=TutorMath.eq(TutorMath.mul(divisor,answer),TutorMath.one);pending.reciprocalChecked=ok;$('pendingReciprocalOut').textContent=ok?'✓ Reciprocal checked. Now calculate both sides.':'Try again. Swap numerator and denominator and keep the original sign.';if(!ok){$('hintStep').hidden=false;record('Reciprocal',false,'The reciprocal entered during a division step was incorrect.');}else record('Reciprocal',true);}catch(e){$('pendingReciprocalOut').textContent=e.message;}
+};
 $('tutorMode').onchange=()=>{clearPending();invalidateVerification();$('tutorPanel').hidden=!tutorOn();if(tutorOn()){
   // Existing free-writing history remains visible, but starts a separate checked problem.
   if(lines.length){try{TutorMath.equation(lines.at(-1).plain);original=lines.at(-1).plain;feedback('Tutor Mode starts from your latest equation. Earlier free-writing lines were not checked.');}catch{feedback('Your free-writing history is preserved. Choose New problem to start a supported equation.',true);}}

@@ -49,3 +49,20 @@ test('coefficient notation renders the same meaning that the checker uses',()=>{
  assert.equal(toLatex('16-11/3p=5'),'16-\\frac{11}{3}p=5');
  assert.equal(toLatex('2/(3p)'),'\\frac{2}{3p}');
 });
+
+test('paper arithmetic accepts the requested independent side results',()=>{
+ const start=M.equation('7=12');
+ const left=M.operation(start.sides[0],'6','-');
+ const right=M.operation(start.sides[1],'6','-');
+ assert.ok(M.same(left,M.parse('1')));
+ assert.ok(M.same(right,M.parse('6')));
+ assert.ok(M.same(M.operation('5','5','-'),M.parse('0')));
+});
+
+test('Tutor Mode keeps visible answer marks and contextual helpers',()=>{
+ for(const id of ['leftMark','rightMark','fractionCoach','reciprocalCoach','pendingReciprocal']){
+   assert.match(html,new RegExp(`id="${id}"`));
+ }
+ assert.match(html,/history-answer/);
+ assert.match(html,/Correct work is marked ✓/);
+});
