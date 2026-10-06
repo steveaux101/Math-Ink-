@@ -64,7 +64,7 @@ test('Tutor Mode keeps visible answer marks and contextual helpers',()=>{
    assert.match(html,new RegExp(`id="${id}"`));
  }
  assert.match(html,/history-answer/);
- assert.match(html,/Correct work is marked ✓/);
+ assert.match(html,/correct and marked ✓/i);
 });
 
 test('typed Return stays in the equation workflow',()=>{
@@ -73,4 +73,18 @@ test('typed Return stays in the equation workflow',()=>{
  assert.match(html,/if\(tutorOn\(\)\) keepEquationWorkflowInView\(\); else keepInView\(\);/);
  assert.match(html,/function applyLayout\(mode\) \{[\s\S]*?resize\(\); renderSheet\(\);\n\}/);
  assert.doesNotMatch(html,/\$\('tutorPanel'\)\.scrollIntoView/);
+});
+
+test('step classification separates simplification from equivalence',()=>{
+ const numeric=M.classifyStep(M.equation('7 - 6 = 12 - 6'),M.equation('1 = 6'));
+ assert.equal(numeric.kind,'simplification');
+ assert.equal(numeric.truth,'false');
+ assert.equal(M.classifyStep(M.equation('3x + 5 = 17'),M.equation('3x = 12')).kind,'equivalent');
+ assert.equal(M.classifyStep(M.equation('16 - 3p = 2/3p + 5'),M.equation('16 - 11/3p = 5')).kind,'equivalent');
+});
+
+test('step classification coaches the side that breaks the transformation',()=>{
+ assert.equal(M.classifyStep(M.equation('3x + 5 = 17'),M.equation('3x = 22')).kind,'incorrect-right');
+ assert.equal(M.classifyStep(M.equation('3x + 5 = 17'),M.equation('3x + 5 = 12')).kind,'incorrect-operation-both-sides');
+ assert.equal(M.classifyStep(M.equation('7 - 6 = 12 - 6'),M.equation('2 = 7')).kind,'equivalent');
 });

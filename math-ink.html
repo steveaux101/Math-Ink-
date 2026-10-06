@@ -865,9 +865,33 @@ const TutorMath = (() => {
     if(!A.n||!C.n) return !A.n&&!C.n&&Boolean(B.n)===Boolean(D.n);
     return eq(mul(A,D),mul(C,B));
   }
+  const complexity=s=>(s.a.n?1:0)+(s.b.n?1:0);
+  function detectChange(from,to) {
+    if(eq(from.a,to.a))return {type:'add',value:add(to.b,neg(from.b))};
+    if(from.a.n){const value=div(to.a,from.a);if(value.n&&eq(mul(from.b,value),to.b))return {type:'scale',value};}
+    if(!from.a.n&&!to.a.n&&from.b.n){const value=div(to.b,from.b);if(value.n)return {type:'scale',value};}
+    return null;
+  }
+  const sameChange=(a,b)=>Boolean(a&&b&&a.type===b.type&&eq(a.value,b.value));
+  function classifyStep(previous,next) {
+    if(previous.variable&&next.variable&&previous.variable!==next.variable)return {kind:'incorrect-operation-both-sides'};
+    const leftSame=same(previous.l,next.l),rightSame=same(previous.r,next.r);
+    if(leftSame&&rightSame){
+      const numeric=!next.l.a.n&&!next.r.a.n;
+      return {kind:'simplification',truth:numeric?(eq(next.l.b,next.r.b)?'true':'false'):'symbolic'};
+    }
+    const leftChange=detectChange(previous.l,next.l),rightChange=detectChange(previous.r,next.r);
+    const bothNumeric=!previous.l.a.n&&!previous.r.a.n&&!next.l.a.n&&!next.r.a.n;
+    if((!bothNumeric&&equivalent(previous,next))||(bothNumeric&&sameChange(leftChange,rightChange)))return {kind:'equivalent'};
+    if(leftChange&&complexity(next.l)<complexity(previous.l)&&!sameChange(leftChange,rightChange))return {kind:'incorrect-right'};
+    if(rightChange&&complexity(next.r)<complexity(previous.r)&&!sameChange(leftChange,rightChange))return {kind:'incorrect-left'};
+    if(leftSame&&!rightSame)return {kind:'incorrect-operation-both-sides',side:'right'};
+    if(rightSame&&!leftSame)return {kind:'incorrect-operation-both-sides',side:'left'};
+    return {kind:'incorrect-operation-both-sides'};
+  }
   function operation(side,raw,op){return parse(`(${side})${op}(${raw})`);}
   function constant(src){const v=parse(src);if(v.variable) throw Error('Enter a number or numerical fraction here.');return v.b;}
-  return {parse,equation,equivalent,same,operation,constant,q,zero,one,add,neg,mul,div,eq,fmt,gcd,normalize};
+  return {parse,equation,equivalent,classifyStep,same,operation,constant,q,zero,one,add,neg,mul,div,eq,fmt,gcd,normalize};
 })();
 /* TUTOR_CORE_END */
 
@@ -903,10 +927,20 @@ function acceptTutorLine(src){
     const next=TutorMath.equation(src);
     if(pending)return checkPending(src);
     if(!lines.length){original=src;invalidateVerification();$('stage').textContent='Choose an operation';feedback(next.variable?'Equation ready. Choose your next move, or enter a simplified equation.':'Arithmetic practice ready. Choose an operation to set up both sides vertically.');resetHints();return true;}
-    const prev=TutorMath.equation(lines.at(-1).plain);
-    if(!TutorMath.equivalent(prev,next)){record('Equation balance',false,'The new equation did not preserve the previous equation.');feedback('Not quite. Check the signs and apply the same change to both sides.',true);return false;}
     if(TutorMath.normalize(src)===TutorMath.normalize(lines.at(-1).plain)){feedback('This repeats the last line. Make a change before checking.',true);return false;}
-    stats.steps++;record('Equivalent steps',true);resetHints();invalidateVerification();feedback('Correct — your equation stays balanced. Choose your next move, or verify your final answer.');return true;
+    const prev=TutorMath.equation(lines.at(-1).plain),result=TutorMath.classifyStep(prev,next);
+    if(result.kind==='simplification'){
+      stats.steps++;record('Correct arithmetic',true);resetHints();invalidateVerification();
+      if(result.truth==='false')feedback(`Your arithmetic is correct: ${prev.sides[0].trim()} = ${next.sides[0].trim()} and ${prev.sides[1].trim()} = ${next.sides[1].trim()}. This equation simplifies to ${next.sides[0].trim()} = ${next.sides[1].trim()}, which is false.`);
+      else if(result.truth==='true')feedback('Your arithmetic is correct on both sides, and the resulting numerical statement is true.');
+      else feedback('Correct arithmetic — each side keeps the same value. Choose your next move.');
+      return true;
+    }
+    if(result.kind==='equivalent'){stats.steps++;record('Equivalent equation',true);resetHints();invalidateVerification();feedback('Equivalent equation — this transformation preserves the same solution. Choose your next move.');return true;}
+    $('hintStep').hidden=false;
+    if(result.kind==='incorrect-right'){record('Incorrect right side',false,'The right side does not match the operation shown by the left side.');feedback('Check the arithmetic on the right side. Apply the same operation you used on the left, then try again.',true);return false;}
+    if(result.kind==='incorrect-left'){record('Incorrect left side',false,'The left side does not match the operation shown by the right side.');feedback('Check the arithmetic on the left side. Apply the same operation you used on the right, then try again.',true);return false;}
+    record('Operation on both sides',false,'The new line did not preserve the previous equation.');feedback(result.side?`The ${result.side} side changed by itself. Check that you performed the same operation on both sides.`:'This line is not equivalent to the previous equation. Check that the same operation was applied to both sides.',true);return false;
   }catch(e){feedback(e.message,true);return false;}
 }
 function startTutorOp(op,raw){
@@ -947,7 +981,13 @@ function checkPending(src){
     if(p.sign&&$('signAnswer').value!==p.sign){$('hintStep').hidden=false;if(!$('signAnswer').value)throw Error('Choose the result’s sign before continuing.');record('Sign arithmetic',false,'Recheck the signs in multiplication or division.');throw Error('Recheck the sign rule, then try again. Use Hint if you want a more specific reminder.');}
     const ok=[TutorMath.same(next.l,p.expected[0]),TutorMath.same(next.r,p.expected[1])];
     setAnswerState('left',ok[0]?'correct':'incorrect');setAnswerState('right',ok[1]?'correct':'incorrect');
-    if(!ok.every(Boolean)){const side=ok[0]?'right':ok[1]?'left':'left and right';$('hintStep').hidden=false;record('Combining like terms',false,`Recheck the ${side} result for ${p.op} (${p.raw}).`);throw Error(`The ${side} result needs another look. Correct work is marked ✓; the other field stays editable. No answer has been filled in.`);}
+    if(!ok.every(Boolean)){
+      $('hintStep').hidden=false;
+      if(ok[0]){record('Incorrect right side',false,`Recheck the right result for ${p.op} (${p.raw}).`);throw Error('The right result needs another look. The left side is correct and marked ✓; the right field stays editable.');}
+      if(ok[1]){record('Incorrect left side',false,`Recheck the left result for ${p.op} (${p.raw}).`);throw Error('The left result needs another look. The right side is correct and marked ✓; the left field stays editable.');}
+      record('Incorrect operation on both sides',false,`Neither result matches the displayed ${p.op} (${p.raw}) step.`);
+      throw Error('Complete the displayed operation on each side before taking another algebra step. Both fields stay editable; use Hint for coaching.');
+    }
     stats.steps++;record(p.op==='+'||p.op==='-'?'Variable movement':'Scaling both sides',true);if(p.sign)record('Sign arithmetic',true);
     lastCheckedOperation={op:p.op,raw:p.raw,sides:p.sides,answers:[next.sides[0].trim(),next.sides[1].trim()]};
     clearPending();invalidateVerification();feedback('Correct — both results check out. Your step is saved.');return true;
