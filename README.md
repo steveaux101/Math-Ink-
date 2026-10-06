@@ -12,6 +12,8 @@ A student-led algebra workspace in one file: [`math-ink.html`](math-ink.html). O
 
 Math Ink never displays a generated algebra solution or fills the answer fields. The checker uses exact rational arithmetic, not floating-point guesses or sampled variable values.
 
+After a typed line is committed, Math Ink keeps the newest locked line and **Do to both sides** controls together in the viewport and places focus in the operation-value field without scrolling. The vertical workspace stays hidden until you select an operation and set it up.
+
 ## Thinking tools
 
 - **Math keypad:** inserts at the cursor in the last selected math input; includes variables, fractions, parentheses, signs, and backspace.
@@ -54,4 +56,4 @@ node --test tests/tutor-math.test.cjs
 
 Tests cover exact fractions/decimals, distribution, signs, equation solution-set preservation (including identities/contradictions), side-specific operation checks, unsupported math, and fraction rendering consistency.
 
-Browser smoke checks covered the full `16-3p=2/3p+5` workflow through student-entered `p=3` and `7=7` verification; `7=12` with `-6` entered independently as `1` and `6`; `5-5` entered as `0`; per-side retry/checkmarks; pending-operation guards; required signs; contextual reciprocal and LCD/fraction helpers; keypad insertion; direct equivalent steps; all three layouts; the original free-writing operation flow; handwriting visibility/undo; scratchpad controls; and a clean JavaScript console.
+Browser smoke checks covered the full `16-3p=2/3p+5` workflow through student-entered `p=3` and `7=7` verification; the typed `7-6=12-6` Return flow with its locked line and next-move controls simultaneously visible; `7=12` with `-6` entered independently as `1` and `6`; `5-5` entered as `0`; per-side retry/checkmarks; pending-operation guards; required signs; contextual reciprocal and LCD/fraction helpers; keypad insertion; direct equivalent steps; all three layouts; the original free-writing operation flow; handwriting visibility/undo; scratchpad controls; and a clean JavaScript console.

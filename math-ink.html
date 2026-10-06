@@ -635,19 +635,37 @@ async function commit() {
   slashMode = 'frac'; $('slashMode').value = slashMode;
   editIdx = null; strokes = []; redraw();
   render([]); if(!tutorOn()) setStatus('Locked · draw the next line');
-  keepInView();
+  if(tutorOn()) keepEquationWorkflowInView(); else keepInView();
   return true;
 }
 let editIdx = null;
 
-function keepInView() { requestAnimationFrame(() => (tutorOn() ? $('tutorPanel') : board).scrollIntoView({ behavior: 'smooth', block: 'nearest' })); }
+function keepInView() { requestAnimationFrame(() => board.scrollIntoView({ behavior: 'smooth', block: 'nearest' })); }
+
+/* Keep the current algebra line and its next-move controls together. This is
+   deliberately separate from the canvas/Tutor panel navigation. */
+function keepEquationWorkflowInView({focusOperation=true}={}) {
+  requestAnimationFrame(() => {
+    const locked=[...$('sheet').querySelectorAll('.line:not(.live)')].at(-1);
+    const controls=$('opbar');
+    if(!locked||!controls)return;
+    const lineRect=locked.getBoundingClientRect(),controlsRect=controls.getBoundingClientRect();
+    const margin=24,available=innerHeight-margin*2;
+    if(lineRect.top<margin||controlsRect.bottom>innerHeight-margin){
+      const span=controlsRect.bottom-lineRect.top;
+      const targetTop=span<=available?margin:Math.max(margin,innerHeight-controlsRect.height-margin-lineRect.height);
+      scrollBy({top:lineRect.top-targetTop,behavior:'auto'});
+    }
+    if(focusOperation)$('opval').focus({preventScroll:true});
+  });
+}
 
 /* ---------- layout switch ---------- */
 const layoutSel = $('layoutSel');
 function applyLayout(mode) {
   $('work').dataset.layout = mode; layoutSel.value = mode;
   try { localStorage.setItem('mathink.layout', mode); } catch {}
-  resize(); renderSheet(); keepInView();
+  resize(); renderSheet();
 }
 layoutSel.onchange = () => applyLayout(layoutSel.value);
 let savedLayout = 'paper'; try { savedLayout = localStorage.getItem('mathink.layout') || 'paper'; } catch {}
@@ -748,7 +766,8 @@ kb.addEventListener('keydown', e => {
   if(!acceptTutorLine(src)) return;
   const T = toLatex(src);
   lines.splice(editIdx === null ? lines.length : editIdx, 0, { tutorOperation:lastCheckedOperation, strokes: [], typed: true, src, tex: T, texD: T, plain: src, toks: [], slashMode: 'frac' });
-  editIdx = null; kb.value = ''; typedLive = ''; renderSheet(); keepInView();
+  editIdx = null; kb.value = ''; typedLive = ''; renderSheet();
+  if(tutorOn()) keepEquationWorkflowInView(); else keepInView();
 });
 
 /* click a '?' in any typeset line and type its value */
@@ -934,7 +953,7 @@ function checkPending(src){
     clearPending();invalidateVerification();feedback('Correct — both results check out. Your step is saved.');return true;
   }catch(e){feedback(e.message,true);return false;}
 }
-function appendTyped(src){const T=toLatex(src);lines.splice(editIdx===null?lines.length:editIdx,0,{tutorOperation:lastCheckedOperation,strokes:[],typed:true,src,tex:T,texD:T,plain:src,toks:[],slashMode:'frac'});editIdx=null;kb.value='';typedLive='';renderSheet();}
+function appendTyped(src){const T=toLatex(src);lines.splice(editIdx===null?lines.length:editIdx,0,{tutorOperation:lastCheckedOperation,strokes:[],typed:true,src,tex:T,texD:T,plain:src,toks:[],slashMode:'frac'});editIdx=null;kb.value='';typedLive='';renderSheet();keepEquationWorkflowInView();}
 async function checkStudentStep(){
   if(pending){const l=$('leftAnswer').value.trim(),r=$('rightAnswer').value.trim();if(l||r){if(!l||!r){$('hintStep').hidden=false;feedback('Fill in both answer fields before checking. Each side is its own arithmetic problem.',true);return;}const src=`${l} = ${r}`;if(checkPending(src))appendTyped(src);return;}}
   if(kb.value.trim()){const src=kb.value.trim();if(acceptTutorLine(src))appendTyped(src);return;}

@@ -66,3 +66,11 @@ test('Tutor Mode keeps visible answer marks and contextual helpers',()=>{
  assert.match(html,/history-answer/);
  assert.match(html,/Correct work is marked ✓/);
 });
+
+test('typed Return stays in the equation workflow',()=>{
+ assert.match(html,/function keepEquationWorkflowInView/);
+ assert.match(html,/\$\('opval'\)\.focus\(\{preventScroll:true\}\)/);
+ assert.match(html,/if\(tutorOn\(\)\) keepEquationWorkflowInView\(\); else keepInView\(\);/);
+ assert.match(html,/function applyLayout\(mode\) \{[\s\S]*?resize\(\); renderSheet\(\);\n\}/);
+ assert.doesNotMatch(html,/\$\('tutorPanel'\)\.scrollIntoView/);
+});
