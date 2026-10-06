@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Math Ink</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<style>
+  :root {
+    --bg: #f6f5f1; --panel: #ffffff; --ink: #1b1b1f; --muted: #6b6b73; --line: #dcdad2;
+    --accent: #2f5fe3; --accent-soft: #e6ecfc; --draw: #1b1b1f; --grid: #e6e4dc; --warn: #b4421d;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17171a; --panel: #212125; --ink: #ececf1; --muted: #9a9aa5; --line: #38383f;
+      --accent: #7c9bff; --accent-soft: #2a3250; --draw: #f2f2f6; --grid: #2d2d33; --warn: #ff9a7a;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 16px; }
+  header { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 12px; }
+  h1 { font-size: 18px; margin: 0 12px 0 0; letter-spacing: -0.01em; }
+  button {
+    font: inherit; color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  label.toggle { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
+  #status { margin-left: auto; font-size: 13px; color: var(--muted); }
+  #status.err { color: var(--warn); }
+  #board {
+    position: relative; height: 36vh; min-height: 230px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+    background-image: radial-gradient(var(--grid) 1px, transparent 1px); background-size: 24px 24px;
+  }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+  #hint { position: absolute; inset: 0; display: grid; place-items: center; color: var(--muted);
+    pointer-events: none; font-size: 16px; text-align: center; padding: 20px; }
+  #overlay { position: absolute; inset: 0; pointer-events: none; }
+  .tok { position: absolute; border: 1px dashed var(--accent); border-radius: 6px; opacity: .35; pointer-events: none; }
+  .tok.hl { opacity: 1; background: var(--accent-soft); border-style: solid; }
+  #strip { margin-top: 10px; display: flex; gap: 8px; align-items: stretch; overflow-x: auto; padding-bottom: 4px; min-height: 8px; }
+  #stripbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; color: var(--muted); font-size: 13px; }
+  #stripbar select { font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 2px 6px; }
+  .sc { flex: none; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 6px 8px; min-width: 64px;
+    display: flex; flex-direction: column; align-items: center; gap: 4px; position: relative; }
+  .sc.hov { border-color: var(--accent); }
+  .sc .main { font-size: 22px; min-width: 40px; padding: 0 8px; background: var(--accent-soft); border-color: transparent; }
+  .sc input { width: 70px; font: inherit; font-size: 16px; text-align: center; padding: 2px; background: var(--bg); color: var(--ink); border: 1px solid var(--accent); border-radius: 6px; }
+  .sc .alts { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; max-width: 150px; }
+  .sc .alts button { padding: 0 6px; font-size: 14px; border-radius: 6px; }
+  .sc .del { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; padding: 0; line-height: 15px; border-radius: 50%; font-size: 12px; opacity: 0; }
+  .sc:hover .del { opacity: 1; }
+  .out { margin-top: 12px; display: grid; gap: 12px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .card h2 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--muted); margin: 0 0 8px; display: flex; align-items: center; justify-content: space-between; }
+  .card h2 button { font-size: 12px; padding: 2px 10px; text-transform: none; letter-spacing: 0; }
+  #sheet { margin-bottom: 12px; padding: 6px 14px; }
+  .line { display: flex; align-items: center; gap: 8px; border-radius: 8px; padding: 2px 6px; cursor: pointer; }
+  .line:hover { background: var(--accent-soft); }
+  .line .eq { flex: 1; font-size: 1.45em; overflow-x: auto; overflow-y: hidden; padding: 4px 0; scrollbar-width: none; min-height: 44px; display: flex; align-items: center; }
+  .line .eq .katex-display { margin: 0; text-align: left; }
+  .line .num { color: var(--muted); font-size: 12px; width: 18px; text-align: right; }
+  .line .x { opacity: 0; padding: 0 8px; }
+  .line:hover .x { opacity: 1; }
+  .line.live { opacity: .55; cursor: default; }
+  .line.live:hover { background: none; }
+  [data-tok] { color: var(--accent); border-bottom: 2px dotted var(--accent); cursor: text; background: var(--accent-soft); border-radius: 3px; }
+  .qin { position: fixed; z-index: 20; width: 90px; font: inherit; font-size: 22px; text-align: center; padding: 0 6px;
+    background: var(--panel); color: var(--ink); border: 2px solid var(--accent); border-radius: 8px; outline: none; }
+  #kb { margin: -4px 0 12px; padding: 8px 10px; }
+  #kbin { width: 100%; font: 16px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 8px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink); outline: none; }
+  #kbin:focus { border-color: var(--accent); }
+  #work { display: flex; flex-direction: column; }
+  #work[data-layout=classic] #kb { order: 1; margin: -4px 0 12px; }
+  #work[data-layout=classic] #drawzone { order: 2; }
+  #work:not([data-layout=classic]) #kb { margin: 10px 0 12px; }
+  #work:not([data-layout=classic]) #sheet { margin-bottom: 8px; }
+  #work:not([data-layout=classic]) #board { height: 24vh; min-height: 170px; }
+  #bpreview { display: none; position: absolute; right: 14px; top: 6px; font-size: 1.25em; opacity: .75; pointer-events: none; max-width: 70%; overflow: hidden; }
+  #bpreview [data-tok] { pointer-events: auto; }
+  #bpreview .katex-display { margin: 0; }
+  #work[data-layout=inline] #bpreview { display: block; }
+  #work[data-layout=inline] #board::before { content: attr(data-n); position: absolute; left: 10px; top: 8px; color: var(--muted); font-size: 12px; pointer-events: none; }
+  #work[data-layout=inline] #board { border-style: dashed; border-color: var(--accent); }
+  #opbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+  #opbar .ops { display: flex; gap: 4px; }
+  #opbar .ops button { width: 36px; font-size: 18px; padding: 2px 0; }
+  #opbar .ops button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  #opval { flex: 1; min-width: 180px; font: 15px ui-monospace, SFMono-Regular, Menlo, monospace; padding: 6px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: var(--bg); color: var(--ink); outline: none; }
+  #opval:focus { border-color: var(--accent); }
+  .opnote { font-size: 13px; color: var(--accent); background: var(--accent-soft); border-radius: 6px; padding: 1px 8px; white-space: nowrap; }
+  .empty { color: var(--muted); padding: 14px 6px; }
+  pre { margin: 0; font: 14px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap;
+    word-break: break-all; min-height: 22px; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 700px) { .two { grid-template-columns: 1fr; } }
+  .tip { color: var(--muted); font-size: 13px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Math Ink</h1>
+    <button id="undo">Undo</button>
+    <button id="clear">Clear</button>
+    <button id="next" class="primary">Next line ⏎</button>
+    <label class="toggle">Layout <select id="layoutSel"><option value="paper">Paper</option><option value="inline">Inline row</option><option value="classic">Classic</option></select></label>
+    <label class="toggle"><input type="checkbox" id="showTok" checked> show detected symbols</label>
+    <div id="status">Draw an equation</div>
+  </header>
+
+  <div id="work" data-layout="paper">
+    <div class="card" id="sheet"></div>
+
+    <div id="drawzone">
+      <div id="opbar"><span>Do to both sides:</span>
+        <div class="ops"><button data-op="+" title="add">+</button><button data-op="-" title="subtract">−</button><button data-op="*" title="multiply">×</button><button data-op="/" title="divide">÷</button></div>
+        <input id="opval" type="text" autocomplete="off" spellcheck="false" placeholder="value — e.g. 1   2r   1/5 r   (or shorthand: -1  *2  /3)">
+        <button id="opapply" class="primary">Apply</button>
+      </div>
+      <div id="board">
+        <canvas id="cv"></canvas>
+        <div id="hint"><div>Draw the next step here with your mouse or trackpad<br>press <b>Enter</b> to lock it as a line and continue below</div></div>
+        <div id="overlay"></div>
+        <div id="bpreview"></div>
+      </div>
+      <div id="stripbar"><span>Detected symbols — click one to correct, hover to locate</span>
+        <label>Diagonal slash: <select id="slashMode"><option value="frac">stacked fraction</option><option value="inline">inline /</option></select></label></div>
+      <div id="strip"></div>
+    </div>
+
+    <div class="card" id="kb"><input id="kbin" type="text" autocomplete="off" spellcheck="false"
+      placeholder="Or type this line here and press Enter — e.g.  12 - 5/x = 2x + 1   (LaTeX works; a shorthand like -1 or *2 applies to both sides)"></div>
+  </div>
+
+  <div class="out">
+    <div class="two">
+      <div class="card"><h2>Plain text (all lines) <button data-copy="plain">Copy</button></h2><pre id="plain"></pre></div>
+      <div class="card"><h2>LaTeX (all lines) <button data-copy="tex">Copy</button></h2><pre id="tex"></pre></div>
+    </div>
+  </div>
+  <p class="tip">Tips: a <span style="color:var(--accent)">?</span> in the typeset is clickable — click it and type the number · press <b>Enter</b> (or Next line) to lock a line and start the next one below · click a locked line to redraw it · leave a small gap between symbols · write exponents small and raised · draw a flat line with something above and below for a fraction ·
+    a wrong guess? use the symbol strip under the canvas to pick another symbol. Recognition uses Google's handwriting service, so it needs an internet connection.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+(() => {
+'use strict';
+const $ = id => document.getElementById(id);
+const cv = $('cv'), ctx = cv.getContext('2d');
+const board = $('board'), overlay = $('overlay');
+
+let strokes = [];            // {id, pts:[{x,y,t}], t0, t1}
+let nextId = 1;
+let cur = null;
+let version = 0;
+let tokensShown = [];
+let lines = [];              // locked lines {strokes, tex, plain}
+let activeTex = '', activeTexD = '', activePlain = '';
+let slashMode = 'frac';
+const cache = new Map();     // groupKey -> {cands:[], sel:0}
+
+/* ---------- drawing ---------- */
+function resize() {
+  const r = board.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  redraw();
+}
+function drawStroke(s) {
+  const p = s.pts;
+  ctx.beginPath();
+  if (p.length === 1) { ctx.arc(p[0].x, p[0].y, 1.8, 0, 7); ctx.fill(); return; }
+  ctx.moveTo(p[0].x, p[0].y);
+  for (let i = 1; i < p.length - 1; i++) {
+    const mx = (p[i].x + p[i + 1].x) / 2, my = (p[i].y + p[i + 1].y) / 2;
+    ctx.quadraticCurveTo(p[i].x, p[i].y, mx, my);
+  }
+  ctx.lineTo(p[p.length - 1].x, p[p.length - 1].y);
+  ctx.stroke();
+}
+function redraw() {
+  const r = board.getBoundingClientRect();
+  ctx.clearRect(0, 0, r.width, r.height);
+  const c = getComputedStyle(document.documentElement).getPropertyValue('--draw').trim() || '#111';
+  ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  strokes.forEach(drawStroke);
+  $('hint').style.display = strokes.length ? 'none' : 'grid';
+}
+function pos(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() };
+}
+let timer = null;
+cv.addEventListener('pointerdown', e => {
+  if (e.button !== 0 && e.pointerType === 'mouse') return;
+  cv.setPointerCapture(e.pointerId);
+  clearTimeout(timer);
+  const p = pos(e);
+  cur = { id: nextId++, pts: [p], t0: p.t, t1: p.t };
+  strokes.push(cur);
+  redraw();
+});
+cv.addEventListener('pointermove', e => {
+  if (!cur) return;
+  const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+  for (const ev of (evs.length ? evs : [e])) {
+    const p = pos(ev), l = cur.pts[cur.pts.length - 1];
+    if (Math.hypot(p.x - l.x, p.y - l.y) < 1.5) continue;
+    cur.pts.push(p); cur.t1 = p.t;
+  }
+  redraw();
+});
+const end = () => { if (!cur) return; cur = null; schedule(350); };
+cv.addEventListener('pointerup', end);
+cv.addEventListener('pointercancel', end);
+
+$('undo').onclick = undo;
+$('clear').onclick = () => { strokes = []; redraw(); schedule(0); };
+$('next').onclick = () => commit();
+$('slashMode').onchange = e => { slashMode = e.target.value; schedule(0); };
+function undo() { strokes.pop(); redraw(); schedule(0); }
+addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !(e.target && e.target.tagName === 'INPUT')) { e.preventDefault(); undo(); }
+  if (e.key === 'Enter' && !(e.target && e.target.tagName === 'INPUT')) { e.preventDefault(); commit(); }
+});
+addEventListener('resize', resize);
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
+$('showTok').onchange = () => { overlay.style.display = $('showTok').checked ? '' : 'none'; };
+
+/* ---------- geometry / grouping ---------- */
+function bboxOf(pts) {
+  let l = 1e9, t = 1e9, r = -1e9, b = -1e9;
+  for (const p of pts) { l = Math.min(l, p.x); r = Math.max(r, p.x); t = Math.min(t, p.y); b = Math.max(b, p.y); }
+  return mk(l, t, r, b);
+}
+function mk(l, t, r, b) { return { l, t, r, b, w: r - l, h: b - t, cx: (l + r) / 2, cy: (t + b) / 2 }; }
+function union(a, b) { return mk(Math.min(a.l, b.l), Math.min(a.t, b.t), Math.max(a.r, b.r), Math.max(a.b, b.b)); }
+const isFlat = bb => bb.w >= 14 && bb.h < 0.2 * bb.w;
+const area = bb => (bb.w + 4) * (bb.h + 4);
+function vgap(a, b) { return Math.max(0, Math.max(a.t, b.t) - Math.min(a.b, b.b)); }
+function xoverlap(a, b) {
+  const o = Math.min(a.r, b.r) - Math.max(a.l, b.l) + 6;   // 3px tolerance each side (vertical lines have zero width)
+  return o <= 0 ? 0 : Math.min(1, o / Math.max(Math.min(a.w, b.w), 6));
+}
+function diagInfo(s) {                    // long, straight, slanted single stroke (a '/' or '\\')
+  const p = s.pts, a = p[0], z = p[p.length - 1];
+  const chord = Math.hypot(z.x - a.x, z.y - a.y);
+  if (p.length < 3 || chord < 30) return null;
+  let len = 0; for (let i = 1; i < p.length; i++) len += Math.hypot(p[i].x - p[i - 1].x, p[i].y - p[i - 1].y);
+  const ang = Math.atan2(Math.abs(z.y - a.y), Math.abs(z.x - a.x)) * 180 / Math.PI;
+  if (chord / len < 0.9 || ang < 22 || ang > 68) return null;
+  return { a, z, chord };
+}
+function canMerge(g, s, sb) {
+  if (s.t0 - g.lastT > 1500) return false;
+  const A = g.bb, B = sb;
+  const dS = diagInfo(s), dG = g.strokes.length === 1 ? diagInfo(g.strokes[0]) : null;
+  if (dS && !dG && Math.max(A.w, A.h) < 0.6 * dS.chord) return false;           // small symbols next to a long slash
+  if (dG && !dS && Math.max(B.w, B.h) < 0.6 * dG.chord) return false;
+  if (xoverlap(A, B) < 0.5) return false;
+  const gap = vgap(A, B);
+  const fA = g.strokes.length === 1 && isFlat(A), fB = isFlat(B);
+  if (fA !== fB) {
+    const flat = fA ? A : B, other = fA ? B : A;
+    if (gap <= 0.15 * other.h + 2) return true;                                  // crossing / touching (+, t, 5…)
+    return Math.max(other.w, other.h) < 0.35 * flat.w && gap < 0.8 * flat.w;     // dots of ÷
+  }
+  if (fA && fB) {
+    const mn = Math.max(Math.min(A.w, B.w), 6);
+    return gap < 0.6 * mn && Math.max(A.w, B.w) / mn <= 2.5;                     // =
+  }
+  const big = area(A) > area(B) ? A : B, small = big === A ? B : A;
+  const inside = small.l >= big.l && small.r <= big.r && small.t >= big.t && small.b <= big.b;
+  if (inside && area(big) / area(small) > 3.5) return false;                     // content inside √ etc.
+  if (Math.max(A.w, B.w) / Math.max(Math.min(A.w, B.w), 6) > 3) return false;
+  return gap < 0.5 * Math.max(A.h, B.h, 6);                                      // i-dot, x, 4 …
+}
+function groupStrokes(list) {
+  const groups = [];
+  for (const s of list) {
+    const sb = bboxOf(s.pts);
+    let hit = null;
+    for (let i = groups.length - 1; i >= Math.max(0, groups.length - 4); i--) {
+      if (canMerge(groups[i], s, sb)) { hit = groups[i]; break; }
+    }
+    if (hit) { hit.strokes.push(s); hit.bb = union(hit.bb, sb); hit.lastT = Math.max(hit.lastT, s.t1); }
+    else groups.push({ strokes: [s], bb: sb, lastT: s.t1 });
+  }
+  groups.forEach(g => { g.key = g.strokes.map(s => s.id).join('-'); });
+  return groups;
+}
+
+/* ---------- recognition ---------- */
+const API = 'https://inputtools.google.com/request?itc=en-t-i0-handwrit&app=mobilesearch';
+async function recognize(g) {
+  if (cache.has(g.key)) return;
+  const bb = g.bb, one = g.strokes.length === 1;
+  if (one && Math.max(bb.w, bb.h) < 10) { cache.set(g.key, { cands: ['.', ',', '·', '*'], sel: 0 }); return; }
+  if (one && diagInfo(g.strokes[0])) { cache.set(g.key, { cands: ['/', '\\', '|'], sel: 0 }); return; }
+  if (one && isFlat(bb)) { cache.set(g.key, { cands: ['-', '—', '_', '~'], sel: 0 }); return; }
+  const r = board.getBoundingClientRect();
+  const ink = g.strokes.map(s => {
+    const t0 = s.pts[0].t, pts = s.pts.length > 1 ? s.pts : [s.pts[0], s.pts[0]];
+    return [pts.map(p => Math.round(p.x)), pts.map(p => Math.round(p.y)), pts.map((p, i) => Math.round(p.t - t0) + i)];
+  });
+  const body = { options: 'enable_pre_space',
+    requests: [{ writing_guide: { writing_area_width: Math.round(r.width), writing_area_height: Math.round(r.height) },
+      ink, language: 'en' }] };
+  const res = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const j = await res.json();
+  if (j[0] !== 'SUCCESS') throw new Error('recognizer: ' + j[0]);
+  const seen = new Set(), cands = [];
+  for (const c of (j[1][0][1] || [])) {
+    const t = c.replace(/\s+/g, '');
+    if (t && !seen.has(t)) { seen.add(t); cands.push(t); }
+    if (cands.length >= 9) break;
+  }
+  if (!cands.length) cands.push('?');
+  cache.set(g.key, { cands, sel: 0 });
+}
+
+/* ---------- symbols ---------- */
+const GREEK = { 'α': 'alpha', 'β': 'beta', 'γ': 'gamma', 'δ': 'delta', 'ε': 'epsilon', 'ζ': 'zeta', 'η': 'eta', 'θ': 'theta',
+  'λ': 'lambda', 'μ': 'mu', 'ν': 'nu', 'ξ': 'xi', 'π': 'pi', 'ρ': 'rho', 'σ': 'sigma', 'τ': 'tau', 'φ': 'phi', 'χ': 'chi',
+  'ψ': 'psi', 'ω': 'omega', 'Γ': 'Gamma', 'Δ': 'Delta', 'Θ': 'Theta', 'Λ': 'Lambda', 'Π': 'Pi', 'Σ': 'Sigma', 'Φ': 'Phi',
+  'Ψ': 'Psi', 'Ω': 'Omega' };
+const SYM = { '×': '\\times', '÷': '\\div', '−': '-', '–': '-', '—': '-', '±': '\\pm', '∓': '\\mp', '∞': '\\infty',
+  '≤': '\\le', '≥': '\\ge', '≠': '\\ne', '≈': '\\approx', '≡': '\\equiv', '∑': '\\sum', '∫': '\\int', '∂': '\\partial',
+  '∇': '\\nabla', '°': '^\\circ', '→': '\\to', '←': '\\leftarrow', '⇒': '\\Rightarrow', '⇔': '\\Leftrightarrow',
+  '∈': '\\in', '∉': '\\notin', '⊂': '\\subset', '⊆': '\\subseteq', '∪': '\\cup', '∩': '\\cap', '∅': '\\emptyset',
+  '∠': '\\angle', '∴': '\\therefore', '·': '\\cdot', '∝': '\\propto', '∀': '\\forall', '∃': '\\exists', '′': "'",
+  '#': '\\#', '$': '\\$', '%': '\\%', '&': '\\&', '_': '\\_', '{': '\\{', '}': '\\}', '~': '\\sim', '^': '\\^{}',
+  '\\': '\\backslash', '"': "''" };
+function symFor(str) {
+  let tex = '', txt = '';
+  for (const ch of str) {
+    if (GREEK[ch]) tex += '\\' + GREEK[ch] + ' ';
+    else if (SYM[ch]) tex += SYM[ch] + (SYM[ch][0] === '\\' && /[a-z]$/i.test(SYM[ch]) ? ' ' : '');
+    else tex += ch;
+    txt += (ch === '−' || ch === '–' || ch === '—') ? '-' : ch;
+  }
+  return { tex, txt };
+}
+
+/* ---------- 2-D layout → AST ---------- */
+function median(a) { if (!a.length) return 30; a = a.slice().sort((x, y) => x - y); return a[a.length >> 1]; }
+const txtOf = t => cache.get(t.key).cands[cache.get(t.key).sel];
+
+function parseRow(input) {
+  let toks = input.slice();
+
+  // fractions: widest flat bar with something above and below, consumed first
+  for (;;) {
+    let best = null;
+    for (const b of toks) {
+      let num, den;
+      if (b.flat && b.bb.w >= 20) {
+        const inX = o => o !== b && o.bb.cx >= b.bb.l && o.bb.cx <= b.bb.r;
+        num = toks.filter(o => inX(o) && o.bb.cy < b.bb.cy);
+        den = toks.filter(o => inX(o) && o.bb.cy > b.bb.cy);
+      } else if (b.diag && slashMode === 'frac' && txtOf(b) === '/') {
+        const { a, z } = b.diag, m = (z.y - a.y) / (z.x - a.x), bb = b.bb;
+        const near = o => o !== b && o.bb.cx > bb.l - 0.1 * bb.w && o.bb.cx < bb.r + 0.1 * bb.w &&
+          o.bb.cy > bb.t - 0.4 * bb.h && o.bb.cy < bb.b + 0.4 * bb.h;
+        const lineY = x => a.y + m * (x - a.x);
+        num = toks.filter(o => near(o) && o.bb.cy < lineY(o.bb.cx));
+        den = toks.filter(o => near(o) && o.bb.cy >= lineY(o.bb.cx));
+      } else continue;
+      if (num.length && den.length && (!best || b.bb.w > best.b.bb.w)) best = { b, num, den };
+    }
+    if (!best) break;
+    const used = new Set([best.b, ...best.num, ...best.den]);
+    let bb = best.b.bb;
+    used.forEach(o => { bb = union(bb, o.bb); });
+    toks = toks.filter(o => !used.has(o));
+    toks.push({ bb: { ...bb, cy: best.b.bb.cy }, node: { k: 'frac', n: parseRow(best.num), d: parseRow(best.den) } });
+  }
+
+  // square roots
+  for (;;) {
+    let best = null;
+    for (const r of toks) {
+      if (r.node || r.key === undefined || txtOf(r) !== '√') continue;
+      const inside = toks.filter(o => o !== r && o.bb.cx > r.bb.l + 0.2 * r.bb.w && o.bb.cx < r.bb.r + 0.3 * r.bb.w &&
+        o.bb.cy > r.bb.t - 0.3 * r.bb.h && o.bb.cy < r.bb.b + 0.2 * r.bb.h);
+      if (inside.length && (!best || r.bb.w > best.r.bb.w)) best = { r, inside };
+    }
+    if (!best) break;
+    const used = new Set([best.r, ...best.inside]);
+    let bb = best.r.bb;
+    used.forEach(o => { bb = union(bb, o.bb); });
+    toks = toks.filter(o => !used.has(o));
+    toks.push({ bb, node: { k: 'sqrt', c: parseRow(best.inside) } });
+  }
+
+  toks.sort((a, b) => a.bb.l - b.bb.l);
+  const med = median(toks.filter(t => !t.flat && !t.node).map(t => t.bb.h));
+  const entries = [];
+  let base = null;
+  for (const t of toks) {
+    if (base) {
+      const refH = Math.max(base.t.bb.h, med * 0.7);
+      const dy = t.bb.cy - base.t.bb.cy;
+      if (dy < -0.4 * refH && t.bb.h <= 1.1 * refH) { base.sup.push(t); continue; }
+      if (dy > 0.45 * refH && t.bb.h <= 1.1 * refH) { base.sub.push(t); continue; }
+    }
+    base = { t, sup: [], sub: [] };
+    entries.push(base);
+  }
+  return entries.map(e => {
+    const node = e.t.node ? e.t.node : { k: 's', ...symFor(txtOf(e.t)), key: e.t.key };
+    if (e.sup.length) node.sup = parseRow(e.sup);
+    if (e.sub.length) node.sub = parseRow(e.sub);
+    return node;
+  });
+}
+
+/* ---------- emit ---------- */
+const SUPMAP = { '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+  '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾', 'n': 'ⁿ', 'i': 'ⁱ' };
+const SUBMAP = { '0': '₀', '1': '₁', '2': '₂', '3': '₃', '4': '₄', '5': '₅', '6': '₆', '7': '₇', '8': '₈', '9': '₉',
+  '+': '₊', '-': '₋', '=': '₌', '(': '₍', ')': '₎' };
+function uni(s, map, fallback) {
+  return [...s].every(c => map[c]) ? [...s].map(c => map[c]).join('') : fallback + (s.length > 1 ? '(' + s + ')' : s);
+}
+const paren = s => (s.length > 1 && !/^\(.*\)$/.test(s)) ? '(' + s + ')' : s;
+let DISP = false;   // display mode: unknown '?' symbols are wrapped so they can be clicked and typed over
+function tex(nodes) {
+  return nodes.map(n => {
+    let s = n.k === 'frac' ? `\\frac{${tex(n.n)}}{${tex(n.d)}}` : n.k === 'sqrt' ? `\\sqrt{${tex(n.c)}}` :
+      (DISP && n.txt === '?') ? `\\htmlData{tok=${String(n.key).replace(/[^0-9-]/g, '')}}{?}` : n.tex;
+    if (n.sup || n.sub) { if (n.k !== 's') s = `{${s}}`; else s = s.trim(); }
+    if (n.sup) s += `^{${tex(n.sup)}}`;
+    if (n.sub) s += `_{${tex(n.sub)}}`;
+    return s;
+  }).join('');
+}
+function plain(nodes) {
+  return nodes.map(n => {
+    let s = n.k === 'frac' ? `${paren(plain(n.n))}/${paren(plain(n.d))}` : n.k === 'sqrt' ? '√' + paren(plain(n.c)) : n.txt;
+    if (n.sup) s += uni(plain(n.sup), SUPMAP, '^');
+    if (n.sub) s += uni(plain(n.sub), SUBMAP, '_');
+    return s;
+  }).join('');
+}
+
+/* ---------- pipeline ---------- */
+function schedule(ms) { clearTimeout(timer); timer = setTimeout(convert, ms); }
+function setStatus(msg, err) { const s = $('status'); s.textContent = msg; s.className = err ? 'err' : ''; }
+
+async function convert() {
+  const my = ++version;
+  const groups = groupStrokes(strokes);
+  if (!groups.length) { render([]); setStatus('Draw the next line · Enter to lock it'); return true; }
+  setStatus('Recognizing…');
+  try { await Promise.all(groups.map(recognize)); }
+  catch (e) { if (my === version) setStatus('Recognition failed – are you online? (' + e.message + ')', true); return false; }
+  if (my !== version) return false;
+  const toks = groups.map(g => ({ key: g.key, bb: g.bb, flat: g.strokes.length === 1 && isFlat(g.bb), diag: g.strokes.length === 1 ? diagInfo(g.strokes[0]) : null, strokes: g.strokes }));
+  render(toks);
+  setStatus('Converted · Enter locks the line · wrong guess? use the strip below');
+  return true;
+}
+function build(nodes) {
+  DISP = false; const t = tex(nodes); DISP = true; const d = tex(nodes); DISP = false;
+  return { tex: t, texD: d, plain: plain(nodes) };
+}
+function render(toks) {
+  tokensShown = toks;
+  const nodes = toks.length ? parseRow(toks) : [];
+  const bundle = build(nodes); activeTex = bundle.tex; activeTexD = bundle.texD; activePlain = bundle.plain;
+  renderSheet();
+  overlay.innerHTML = '';
+  const boxes = new Map();
+  for (const t of toks) {
+    const d = document.createElement('div'), pad = 4;
+    d.className = 'tok';
+    d.style.cssText = `left:${t.bb.l - pad}px;top:${t.bb.t - pad}px;width:${t.bb.w + 2 * pad}px;height:${t.bb.h + 2 * pad}px`;
+    overlay.appendChild(d); boxes.set(t.key, d);
+  }
+  renderStrip(toks, boxes);
+}
+function renderStrip(toks, boxes) {
+  const strip = $('strip'); strip.innerHTML = '';
+  for (const t of toks.slice().sort((a, b) => a.bb.l - b.bb.l)) {
+    const c = cache.get(t.key), card = document.createElement('div'); card.className = 'sc';
+    const hl = on => { const bx = boxes.get(t.key); if (bx) bx.classList.toggle('hl', on); card.classList.toggle('hov', on); };
+    card.onmouseenter = () => hl(true); card.onmouseleave = () => hl(false);
+    const main = document.createElement('button'); main.className = 'main'; main.textContent = c.cands[c.sel]; main.title = 'Click to type any symbol';
+    main.onclick = () => {
+      const inp = document.createElement('input'); inp.placeholder = 'π ≤ ∑ …';
+      inp.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter' && inp.value.trim()) { c.cands.unshift(inp.value.trim()); c.sel = 0; render(tokensShown); } if (e.key === 'Escape') render(tokensShown); };
+      main.replaceWith(inp); inp.focus();
+    };
+    card.appendChild(main);
+    const alts = document.createElement('div'); alts.className = 'alts';
+    c.cands.forEach((s, i) => {
+      if (i === c.sel || i > 7) return;
+      const b = document.createElement('button'); b.textContent = s; b.onclick = () => { c.sel = i; render(tokensShown); };
+      alts.appendChild(b);
+    });
+    card.appendChild(alts);
+    const del = document.createElement('button'); del.className = 'del'; del.textContent = '×'; del.title = 'Delete this symbol';
+    del.onclick = () => { const ids = new Set(t.strokes.map(s => s.id)); strokes = strokes.filter(s => !ids.has(s.id)); redraw(); schedule(0); };
+    card.appendChild(del);
+    strip.appendChild(card);
+  }
+}
+
+/* ---------- worksheet ---------- */
+function typeset(el, T) {
+  try { if (window.katex) katex.render(T, el, { throwOnError: false, displayMode: true, trust: c => c.command === '\\htmlData' }); else el.textContent = T; }
+  catch { el.textContent = T; }
+}
+function renderSheet() {
+  const sheet = $('sheet'); sheet.innerHTML = '';
+  const add = (T, cls, i) => {
+    const row = document.createElement('div'); row.className = 'line ' + cls;
+    const n = document.createElement('span'); n.className = 'num'; n.textContent = i; row.appendChild(n);
+    const eq = document.createElement('div'); eq.className = 'eq'; typeset(eq, T); row.appendChild(eq);
+    sheet.appendChild(row); return row;
+  };
+  lines.forEach((ln, i) => {
+    const row = add(ln.texD, '', i + 1); row.title = ln.op ? 'Click to change this operation' : ln.typed ? 'Click to edit this line' : 'Click to redraw this line';
+    row.onclick = () => editLine(i);
+    if (ln.op) { const nt = document.createElement('span'); nt.className = 'opnote'; nt.textContent = ln.note + ' both sides'; row.appendChild(nt); }
+    const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Delete line';
+    x.onclick = e => { e.stopPropagation(); lines.splice(i, 1); renderSheet(); };
+    row.appendChild(x);
+  });
+  const inline = $('work').dataset.layout === 'inline';
+  board.dataset.n = lines.length + 1;
+  if (inline && activeTex) typeset($('bpreview'), activeTexD); else $('bpreview').innerHTML = '';
+  if (activeTex && !inline) add(activeTexD, 'live', lines.length + 1);
+  if (typedLive) add(typedLive, 'live', lines.length + 1 + (activeTex && !inline ? 1 : 0));
+  if (!lines.length && !(activeTex && !inline) && !typedLive) sheet.innerHTML = '<div class="empty">Your typeset lines appear here</div>';
+  const all = lines.map(l => ({ t: l.op ? l.tex + ` \\quad \\left[${l.noteTex}\\right]` : l.tex, p: l.op ? l.plain + `    [${l.note}]` : l.plain })).concat(activeTex ? [{ t: activeTex, p: activePlain }] : []);
+  $('plain').textContent = all.map(l => l.p).join('\n');
+  $('tex').textContent = all.length < 2 ? (all[0] ? all[0].t : '') :
+    '\\begin{aligned}\n' + all.map(l => l.t.replace('=', '&=')).join(' \\\\\n') + '\n\\end{aligned}';
+}
+async function commit() {
+  if (!strokes.length) return false;
+  clearTimeout(timer);
+  if (!(await convert()) || !activeTex) return false;
+  lines.splice(editIdx === null ? lines.length : editIdx, 0, { strokes, tex: activeTex, texD: activeTexD, plain: activePlain, toks: tokensShown, slashMode });
+  slashMode = 'frac'; $('slashMode').value = slashMode;
+  editIdx = null; strokes = []; redraw();
+  render([]); setStatus('Locked · draw the next line');
+  keepInView();
+  return true;
+}
+let editIdx = null;
+
+function keepInView() { requestAnimationFrame(() => board.scrollIntoView({ behavior: 'smooth', block: 'nearest' })); }
+
+/* ---------- layout switch ---------- */
+const layoutSel = $('layoutSel');
+function applyLayout(mode) {
+  $('work').dataset.layout = mode; layoutSel.value = mode;
+  try { localStorage.setItem('mathink.layout', mode); } catch {}
+  resize(); renderSheet(); keepInView();
+}
+layoutSel.onchange = () => applyLayout(layoutSel.value);
+let savedLayout = 'paper'; try { savedLayout = localStorage.getItem('mathink.layout') || 'paper'; } catch {}
+
+/* ---------- typed equations ---------- */
+const WORDS = 'pi|theta|alpha|beta|gamma|delta|epsilon|lambda|mu|sigma|omega|phi|tau|rho|eta|nu|xi|psi|Delta|Sigma|Omega|Gamma|Pi|Phi|sin|cos|tan|log|ln|lim|sum|int'.split('|').join('|');
+function toLatex(src) {
+  if (src.includes('\\')) return src;
+  let t = src;
+  const unp = x => x.replace(/^\((.*)\)$/, '$1');
+  for (let i = 0; i < 6 && /sqrt\(/.test(t); i++) t = t.replace(/sqrt\(([^()]*)\)/g, '\\sqrt{$1}');
+  t = t.replace(/\binf(inity)?\b/g, '\\infty').replace(new RegExp('\\b(' + WORDS + ')\\b', 'g'), '\\$1');
+  const op = '(\\([^()]*\\)|[\\w.\\\\]+)';
+  const fr = new RegExp(op + '\\s*/\\s*' + op);
+  for (let i = 0; i < 8 && fr.test(t); i++) t = t.replace(fr, (_, a, b) => `\\frac{${unp(a)}}{${unp(b)}}`);
+  t = t.replace(/\^\s*\(([^()]*)\)/g, '^{$1}').replace(/\^\s*(-?\w+)/g, '^{$1}')
+       .replace(/_\s*\(([^()]*)\)/g, '_{$1}').replace(/_\s*(\w+)/g, '_{$1}');
+  return t.replace(/<=/g, '\\le ').replace(/>=/g, '\\ge ').replace(/!=/g, '\\ne ').replace(/\+-/g, '\\pm ')
+          .replace(/~=/g, '\\approx ').replace(/\*/g, '\\times ');
+}
+/* ---------- do-the-same-to-both-sides ---------- */
+function splitEq(str) {                      // split at the first top-level '='
+  let d = 0;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (c === '{' || c === '(') d++; else if (c === '}' || c === ')') d--;
+    else if (c === '=' && d === 0) return [str.slice(0, i).replace(/&$/, '').trim(), str.slice(i + 1).trim()];
+  }
+  return null;
+}
+function hasAddSub(str) {
+  let d = 0;
+  for (let i = 1; i < str.length; i++) {
+    const c = str[i];
+    if (c === '{' || c === '(') d++; else if (c === '}' || c === ')') d--;
+    else if (d === 0 && (c === '+' || c === '-')) return true;
+  }
+  return false;
+}
+const wrapT = x => `\\left(${x}\\right)`;
+const wrapP = x => `(${x})`;
+let selOp = null;
+const opButtons = [...document.querySelectorAll('#opbar [data-op]')];
+function setOp(o) { selOp = o; opButtons.forEach(b => b.classList.toggle('on', b.dataset.op === o)); }
+opButtons.forEach(b => b.onclick = () => { setOp(selOp === b.dataset.op ? null : b.dataset.op); $('opval').focus(); });
+const SHORT = /^\s*([+\-−*\/×÷])\s*(.+)$/;
+async function applyOp(op, raw) {
+  raw = raw.trim();
+  if (!raw) { setStatus('Type a value to apply (e.g. 1, 2r, 1/5 r)', true); return false; }
+  if (strokes.length && !(await commit())) return false;
+  const last = lines[lines.length - 1];
+  if (!last) { setStatus('Enter line 1 (the equation) first', true); return false; }
+  const T = splitEq(last.tex), P = splitEq(last.plain);
+  if (!T || !P) { setStatus('The line above needs an = sign to work on both sides', true); return false; }
+  op = op === '−' ? '-' : op === '×' ? '*' : op === '÷' ? '/' : op;
+  const v = toLatex(raw), pv = raw;
+  const tSide = S => op === '+' ? `${S} + ${hasAddSub(v) ? wrapT(v) : v}`
+    : op === '-' ? `${S} - ${hasAddSub(v) ? wrapT(v) : v}`
+    : op === '*' ? `${hasAddSub(S) ? wrapT(S) : S} \\times ${hasAddSub(v) ? wrapT(v) : v}`
+    : `\\frac{${S}}{${v}}`;
+  const need = x => x.length > 1 && !/^\(.*\)$/.test(x) && /[^\w.]/.test(x);
+  const pSide = S => op === '+' ? `${S} + ${hasAddSub(pv) ? wrapP(pv) : pv}`
+    : op === '-' ? `${S} - ${hasAddSub(pv) ? wrapP(pv) : pv}`
+    : op === '*' ? `${hasAddSub(S) ? wrapP(S) : S} × ${hasAddSub(pv) ? wrapP(pv) : pv}`
+    : `${need(S) ? wrapP(S) : S} / ${need(pv) ? wrapP(pv) : pv}`;
+  const sym = { '+': '+', '-': '−', '*': '×', '/': '÷' }[op];
+  const noteTex = { '+': '+', '-': '-', '*': '\\times ', '/': '\\div ' }[op] + v;
+  lines.push({ strokes: [], op: true, opCode: op, src: pv, note: sym + pv, noteTex,
+    tex: `${tSide(T[0])} = ${tSide(T[1])}`, texD: `${tSide(T[0])} = ${tSide(T[1])}`,
+    plain: `${pSide(P[0])} = ${pSide(P[1])}`, toks: [], slashMode: 'frac' });
+  $('opval').value = ''; renderSheet(); keepInView();
+  setStatus('Applied ' + sym + pv + ' to both sides · now write the simplified line');
+  return true;
+}
+$('opapply').onclick = () => submitOp();
+$('opval').addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); submitOp(); } });
+function submitOp() {
+  const raw = $('opval').value;
+  if (selOp) return applyOp(selOp, raw);
+  const m = raw.match(SHORT);
+  if (m) return applyOp(m[1], m[2]);
+  setStatus('Pick + − × ÷ first (or start the value with one, e.g. -1)', true);
+}
+
+let typedLive = '';
+const kb = $('kbin');
+kb.addEventListener('input', () => { typedLive = kb.value.trim() ? toLatex(kb.value.trim()) : ''; renderSheet(); });
+kb.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !kb.value.trim()) return;
+  e.preventDefault();
+  const src = kb.value.trim();
+  const last = lines[lines.length - 1], sm = src.match(SHORT);
+  if (sm && !src.includes('=') && last && splitEq(last.plain) && editIdx === null) { kb.value = ''; typedLive = ''; applyOp(sm[1], sm[2]); return; }
+  const T = toLatex(src);
+  lines.splice(editIdx === null ? lines.length : editIdx, 0, { strokes: [], typed: true, src, tex: T, texD: T, plain: src, toks: [], slashMode: 'frac' });
+  editIdx = null; kb.value = ''; typedLive = ''; renderSheet(); keepInView();
+});
+
+/* click a '?' in any typeset line and type its value */
+function rebuildLine(ln) {
+  const keep = slashMode; slashMode = ln.slashMode || 'frac';
+  Object.assign(ln, build(parseRow(ln.toks))); slashMode = keep;
+}
+const qHandler = e => {
+  const q = e.target.closest('[data-tok]');
+  if (!q) return;
+  e.stopPropagation();
+  const clean = k => String(k).replace(/[^0-9-]/g, '');
+  const key = [...cache.keys()].find(k => clean(k) === q.dataset.tok), c = cache.get(key);
+  if (!c) return;
+  const r = q.getBoundingClientRect(), inp = document.createElement('input');
+  inp.className = 'qin'; inp.placeholder = '#'; inp.inputMode = 'decimal';
+  inp.style.cssText = `left:${r.left - 8}px;top:${r.top - 4}px;height:${Math.max(r.height + 8, 32)}px`;
+  let done = false;
+  const finish = ok => {
+    if (done) return; done = true;
+    const v = inp.value.trim(); inp.remove();
+    if (ok && v) {
+      c.cands.unshift(v); c.sel = 0;
+      const ln = lines.find(l => l.toks.some(t => t.key === key));
+      if (ln) { rebuildLine(ln); renderSheet(); } else render(tokensShown);
+    }
+  };
+  inp.onkeydown = ev => { ev.stopPropagation(); if (ev.key === 'Enter') finish(true); if (ev.key === 'Escape') finish(false); };
+  inp.onblur = () => finish(true);
+  document.body.appendChild(inp); inp.focus();
+};
+[$('sheet'), $('bpreview')].forEach(el => el.addEventListener('click', qHandler, true));
+async function editLine(i) {
+  if (strokes.length && !(await commit())) return;
+  const ln = lines.splice(i, 1)[0];
+  if (ln.op) { setOp(ln.opCode); $('opval').value = ln.src; $('opval').focus(); renderSheet(); return; }
+  if (ln.typed) { editIdx = i; kb.value = ln.src; typedLive = toLatex(ln.src); renderSheet(); kb.focus(); return; }
+  strokes = ln.strokes; editIdx = i; slashMode = ln.slashMode || 'frac'; $('slashMode').value = slashMode; redraw(); convert();
+}
+
+document.querySelectorAll('[data-copy]').forEach(b => b.onclick = async () => {
+  const txt = $(b.dataset.copy).textContent; const old = b.textContent;
+  try { await navigator.clipboard.writeText(txt); b.textContent = 'Copied'; } catch { b.textContent = 'Press ⌘C'; }
+  setTimeout(() => b.textContent = old, 1100);
+});
+
+window.mathInk = { commit, get lines() { return lines; }, get strokes() { return strokes; }, set strokes(v) { strokes = v; redraw(); }, convert, cache };
+resize();
+applyLayout(['paper', 'inline', 'classic'].includes(savedLayout) ? savedLayout : 'paper');
+})();
+</script>
+</body>
+</html>
