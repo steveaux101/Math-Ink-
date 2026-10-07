@@ -162,7 +162,7 @@
     <div id="drawzone">
       <div id="opbar"><span>Do to both sides:</span>
         <div class="ops"><button data-op="+" title="add">+</button><button data-op="-" title="subtract">−</button><button data-op="*" title="multiply">×</button><button data-op="/" title="divide">÷</button></div>
-        <input id="opval" type="text" autocomplete="off" spellcheck="false" placeholder="value — e.g. 1   2r   1/5 r   (or shorthand: -1  *2  /3)">
+        <input id="opval" type="text" autocomplete="off" spellcheck="false" placeholder="Enter value">
         <button id="opapply" class="primary">Set up operation</button>
       </div>
   <section id="tutorPanel" class="card">
@@ -177,7 +177,7 @@
       <div id="fractionCoach" class="coach" hidden><p id="fractionCoachText"></p><button id="openFractionHelper">Open fraction / LCD helper</button></div>
       <div id="reciprocalCoach" class="coach" hidden><p>Dividing by a fraction is the same as multiplying by its reciprocal. Enter the reciprocal yourself before checking the arithmetic.</p><div class="toolbar"><input id="pendingReciprocal" class="small-input" aria-label="Reciprocal of the divisor" placeholder="Your reciprocal"><button id="checkPendingReciprocal">Check reciprocal</button><span id="pendingReciprocalOut" role="status"></span></div></div>
     </div>
-    <div class="toolbar"><button id="checkStep" class="primary">Check My Step</button><button id="hintStep" hidden>Hint</button><button id="cancelOp" hidden>Cancel operation</button></div>
+    <div class="toolbar"><button id="checkStep" class="primary" hidden disabled>Check My Step</button><button id="hintStep" hidden>Hint</button><button id="cancelOp" hidden>Cancel operation</button></div>
     <p id="tutorFeedback" role="status" aria-live="polite">Start by typing or handwriting the original equation. You do every calculation.</p>
     <ol id="hints" aria-live="polite"></ol>
   </section>
@@ -265,6 +265,7 @@ function redraw() {
   ctx.strokeStyle = c; ctx.fillStyle = c; ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   strokes.forEach(drawStroke);
   $('hint').style.display = strokes.length ? 'none' : 'grid';
+  updateCheckAvailability();
 }
 function pos(e) {
   const r = cv.getBoundingClientRect();
@@ -601,19 +602,18 @@ function renderSheet() {
     sheet.appendChild(row); return row;
   };
   lines.forEach((ln, i) => {
-    if(ln.tutorOperation){
-      const setup=document.createElement('div');setup.className='history-operation vertical-grid';
-      const symbol={'+':'+','-':'−','*':'×','/':'÷'}[ln.tutorOperation.op];
-      ln.tutorOperation.sides.forEach((side,j)=>{if(j){const equal=document.createElement('span');equal.className='equals';equal.textContent='=';setup.append(equal);}const col=document.createElement('div');col.className='arithmetic';const base=document.createElement('div');base.className='math-row';typeset(base,toLatex(side));const op=document.createElement('div');op.className='math-row operation';op.dataset.symbol=symbol;typeset(op,toLatex(ln.tutorOperation.raw));const answer=document.createElement('div');answer.className='history-answer';answer.textContent=ln.tutorOperation.answers?.[j]||'';col.append(base,op,answer);setup.append(col);});sheet.append(setup);
-    }
-
     const row = add(ln.texD, '', i + 1); row.title = tutorOn() ? 'Edit this line (following dependent steps will be removed)' : ln.op ? 'Click to change this operation' : ln.typed ? 'Click to edit this line' : 'Click to redraw this line';
     row.onclick = () => editLine(i);
     if (ln.op) { const nt = document.createElement('span'); nt.className = 'opnote'; nt.textContent = ln.note + ' both sides'; row.appendChild(nt); }
     const x = document.createElement('button'); x.className = 'x'; x.textContent = '×'; x.title = 'Delete line';
     x.title = 'Delete line (Tutor Mode also removes following dependent steps)';
-    x.onclick = e => { e.stopPropagation(); if(tutorOn()){if(pending){feedback('Finish or cancel your operation before changing history.',true);return;}lines.splice(i);if(i===0)original=null;invalidateVerification();resetHints();}else lines.splice(i,1);renderSheet(); };
+    x.onclick = e => { e.stopPropagation(); if(tutorOn()){if(pending){feedback('Finish or cancel your operation before changing history.',true);return;}if(i>0)delete lines[i-1].transitionAfter;lines.splice(i);if(i===0)original=null;invalidateVerification();resetHints();}else lines.splice(i,1);renderSheet(); };
     row.appendChild(x);
+    if(ln.transitionAfter){
+      const transition=ln.transitionAfter,setup=document.createElement('div');setup.className='history-operation vertical-grid';setup.dataset.transitionAfter=String(i);
+      const symbol={'+':'+','-':'−','*':'×','/':'÷'}[transition.op];
+      transition.sides.forEach((side,j)=>{if(j){const equal=document.createElement('span');equal.className='equals';equal.textContent='=';setup.append(equal);}const col=document.createElement('div');col.className='arithmetic';const base=document.createElement('div');base.className='math-row';typeset(base,toLatex(side));const op=document.createElement('div');op.className='math-row operation';op.dataset.symbol=symbol;typeset(op,toLatex(transition.raw));const answer=document.createElement('div');answer.className='history-answer';answer.textContent=transition.answers?.[j]||'';col.append(base,op,answer);setup.append(col);});sheet.append(setup);
+    }
   });
   const inline = $('work').dataset.layout === 'inline';
   board.dataset.n = lines.length + 1;
@@ -621,17 +621,24 @@ function renderSheet() {
   if (activeTex && !inline) add(activeTexD, 'live', lines.length + 1);
   if (typedLive) add(typedLive, 'live', lines.length + 1 + (activeTex && !inline ? 1 : 0));
   if (!lines.length && !(activeTex && !inline) && !typedLive) sheet.innerHTML = '<div class="empty">Your typeset lines appear here</div>';
-  const all = lines.map(l => ({ t: l.op ? l.tex + ` \\quad \\left[${l.noteTex}\\right]` : l.tex, p: l.op ? l.plain + `    [${l.note}]` : l.plain + (l.tutorOperation ? `    [${l.tutorOperation.op} (${l.tutorOperation.raw}) both sides; checked]` : '') })).concat(activeTex ? [{ t: activeTex, p: activePlain }] : []);
+  const all = lines.map(l => ({ t: l.op ? l.tex + ` \\quad \\left[${l.noteTex}\\right]` : l.tex, p: l.op ? l.plain + `    [${l.note}]` : l.plain + (l.transitionAfter ? `    [next: ${l.transitionAfter.op} (${l.transitionAfter.raw}) both sides; checked]` : '') })).concat(activeTex ? [{ t: activeTex, p: activePlain }] : []);
   $('plain').textContent = all.map(l => l.p).join('\n');
   $('tex').textContent = all.length < 2 ? (all[0] ? all[0].t : '') :
     '\\begin{aligned}\n' + all.map(l => l.t.replace('=', '&=')).join(' \\\\\n') + '\n\\end{aligned}';
+}
+function attachCheckedTransition(insertAt){
+  if(!lastCheckedOperation)return;
+  const source=lines[insertAt-1];
+  if(source)source.transitionAfter=lastCheckedOperation;
+  lastCheckedOperation=null;
 }
 async function commit() {
   if (!strokes.length) return false;
   clearTimeout(timer);
   if (!(await convert()) || !activeTex) return false;
   if (!acceptTutorLine(activePlain)) return false;
-  lines.splice(editIdx === null ? lines.length : editIdx, 0, { tutorOperation:lastCheckedOperation, strokes, tex: activeTex, texD: activeTexD, plain: activePlain, toks: tokensShown, slashMode });
+  const insertAt=editIdx === null ? lines.length : editIdx;attachCheckedTransition(insertAt);
+  lines.splice(insertAt, 0, { strokes, tex: activeTex, texD: activeTexD, plain: activePlain, toks: tokensShown, slashMode });
   slashMode = 'frac'; $('slashMode').value = slashMode;
   editIdx = null; strokes = []; redraw();
   render([]); if(!tutorOn()) setStatus('Locked · draw the next line');
@@ -711,8 +718,11 @@ const wrapT = x => `\\left(${x}\\right)`;
 const wrapP = x => `(${x})`;
 let selOp = null;
 const opButtons = [...document.querySelectorAll('#opbar [data-op]')];
-function setOp(o) { selOp = o; opButtons.forEach(b => b.classList.toggle('on', b.dataset.op === o)); }
-opButtons.forEach(b => b.onclick = () => { setOp(selOp === b.dataset.op ? null : b.dataset.op); $('opval').focus(); });
+function setOp(o) {
+  selOp = o; opButtons.forEach(b => b.classList.toggle('on', b.dataset.op === o));
+  $('opval').placeholder={'+':'What do you want to add?','-':'What do you want to subtract?','*':'Multiply by…','/':'Divide by…'}[o]||'Enter value';
+}
+opButtons.forEach(b => b.onclick = () => { setOp(selOp === b.dataset.op ? null : b.dataset.op); $('opval').focus({preventScroll:true}); });
 const SHORT = /^\s*([+\-−*\/×÷])\s*(.+)$/;
 async function applyOp(op, raw) {
   raw = raw.trim();
@@ -756,7 +766,7 @@ function submitOp() {
 
 let typedLive = '';
 const kb = $('kbin');
-kb.addEventListener('input', () => { typedLive = kb.value.trim() ? toLatex(kb.value.trim()) : ''; renderSheet(); });
+kb.addEventListener('input', () => { typedLive = kb.value.trim() ? toLatex(kb.value.trim()) : ''; renderSheet(); updateCheckAvailability(); });
 kb.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !kb.value.trim()) return;
   e.preventDefault();
@@ -765,8 +775,9 @@ kb.addEventListener('keydown', e => {
   if (sm && !src.includes('=') && last && splitEq(last.plain) && editIdx === null) { kb.value = ''; typedLive = ''; applyOp(sm[1], sm[2]); return; }
   if(!acceptTutorLine(src)) return;
   const T = toLatex(src);
-  lines.splice(editIdx === null ? lines.length : editIdx, 0, { tutorOperation:lastCheckedOperation, strokes: [], typed: true, src, tex: T, texD: T, plain: src, toks: [], slashMode: 'frac' });
-  editIdx = null; kb.value = ''; typedLive = ''; renderSheet();
+  const insertAt=editIdx === null ? lines.length : editIdx;attachCheckedTransition(insertAt);
+  lines.splice(insertAt, 0, { strokes: [], typed: true, src, tex: T, texD: T, plain: src, toks: [], slashMode: 'frac' });
+  editIdx = null; kb.value = ''; typedLive = ''; renderSheet();updateCheckAvailability();
   if(tutorOn()) keepEquationWorkflowInView(); else keepInView();
 });
 
@@ -802,7 +813,7 @@ const qHandler = e => {
 };
 [$('sheet'), $('bpreview')].forEach(el => el.addEventListener('click', qHandler, true));
 async function editLine(i) {
-  if(tutorOn()){if(pending){feedback('Finish or cancel your operation before editing history.',true);return;}if(strokes.length){feedback('Save or clear your current handwriting before editing history.',true);return;}lines.splice(i+1);if(i===0)original=null;invalidateVerification();resetHints();}
+  if(tutorOn()){if(pending){feedback('Finish or cancel your operation before editing history.',true);return;}if(strokes.length){feedback('Save or clear your current handwriting before editing history.',true);return;}if(i>0)delete lines[i-1].transitionAfter;lines.splice(i+1);if(i===0)original=null;invalidateVerification();resetHints();}
   if (strokes.length && !(await commit())) return;
   const ln = lines.splice(i, 1)[0];
   if (ln.op) { setOp(ln.opCode); $('opval').value = ln.src; $('opval').focus(); renderSheet(); return; }
@@ -859,6 +870,11 @@ const TutorMath = (() => {
   }
   function equation(src) {const sides=src.split('=');if(sides.length!==2||sides.some(s=>!s.trim())) throw Error('Enter both sides with one = sign.');const l=parse(sides[0]),r=parse(sides[1]);if(l.variable&&r.variable&&l.variable!==r.variable) throw Error('Use one variable per problem.');return {l,r,variable:l.variable||r.variable,sides};}
   const same=(l,r)=>eq(l.a,r.a)&&eq(l.b,r.b);
+  function sameExpression(expected,student) {
+    const left=typeof expected==='string'?parse(expected):expected;
+    const right=typeof student==='string'?parse(student):student;
+    return same(left,right);
+  }
   function equivalent(a,b) {
     if(a.variable&&b.variable&&a.variable!==b.variable) return false;
     const A=add(a.l.a,neg(a.r.a)),B=add(a.l.b,neg(a.r.b)),C=add(b.l.a,neg(b.r.a)),D=add(b.l.b,neg(b.r.b));
@@ -891,7 +907,7 @@ const TutorMath = (() => {
   }
   function operation(side,raw,op){return parse(`(${side})${op}(${raw})`);}
   function constant(src){const v=parse(src);if(v.variable) throw Error('Enter a number or numerical fraction here.');return v.b;}
-  return {parse,equation,equivalent,classifyStep,same,operation,constant,q,zero,one,add,neg,mul,div,eq,fmt,gcd,normalize};
+  return {parse,equation,equivalent,classifyStep,same,sameExpression,operation,constant,q,zero,one,add,neg,mul,div,eq,fmt,gcd,normalize};
 })();
 /* TUTOR_CORE_END */
 
@@ -912,13 +928,19 @@ function updateProgress(){
 }
 function record(skill,ok,detail=''){if(!stats.skills[skill]||typeof stats.skills[skill]!=='object')stats.skills[skill]={correct:0,retry:0};const entry=stats.skills[skill];entry[ok?'correct':'retry']=(Number(entry[ok?'correct':'retry'])||0)+1;if(!ok){stats.mistakes++;stats.log.push(`${skill}: ${detail}`);stats.log=stats.log.slice(-40);}updateProgress();}
 function resetHints(){hintLevel=0;$('hints').replaceChildren();}
+function updateCheckAvailability(){
+  const typed=Boolean(kb?.value.trim()),ink=strokes.length>0;
+  const pendingReady=Boolean(pending&&$('leftAnswer').value.trim()&&$('rightAnswer').value.trim());
+  const ready=pendingReady||(!pending&&(typed||ink));
+  $('checkStep').hidden=!ready;$('checkStep').disabled=!ready;
+}
 function setAnswerState(side,state=''){
   const input=$(side+'Answer'),mark=$(side+'Mark');
   input.classList.remove('correct','incorrect');input.readOnly=false;mark.className='answer-mark';mark.textContent='';
   if(state){input.classList.add(state);mark.classList.add(state);mark.textContent=state==='correct'?'✓':'!';}
   if(state==='correct')input.readOnly=true;
 }
-function clearPending(){document.querySelectorAll('[data-sign]').forEach(b=>b.setAttribute('aria-pressed','false'));pending=null;$('verticalWork').hidden=true;$('cancelOp').hidden=true;$('hintStep').hidden=true;$('fractionCoach').hidden=true;$('reciprocalCoach').hidden=true;$('leftAnswer').value='';$('rightAnswer').value='';$('signAnswer').value='';$('pendingReciprocal').value='';$('pendingReciprocalOut').textContent='';setAnswerState('left');setAnswerState('right');resetHints();$('stage').textContent=lines.length?'Choose an operation or enter a step':'Enter your equation below';}
+function clearPending(){document.querySelectorAll('[data-sign]').forEach(b=>b.setAttribute('aria-pressed','false'));pending=null;setOp(null);$('verticalWork').hidden=true;$('cancelOp').hidden=true;$('hintStep').hidden=true;$('fractionCoach').hidden=true;$('reciprocalCoach').hidden=true;$('leftAnswer').value='';$('rightAnswer').value='';$('signAnswer').value='';$('pendingReciprocal').value='';$('pendingReciprocalOut').textContent='';setAnswerState('left');setAnswerState('right');resetHints();$('stage').textContent=lines.length?'Choose your next move':'Enter your equation below';updateCheckAvailability();}
 function invalidateVerification(){verified=false;substitutionValue=null;$('verifyOut').textContent='';$('substitution').replaceChildren();$('verifyLeft').value='';$('verifyRight').value='';}
 function acceptTutorLine(src){
   lastCheckedOperation=null;
@@ -926,7 +948,7 @@ function acceptTutorLine(src){
   try{
     const next=TutorMath.equation(src);
     if(pending)return checkPending(src);
-    if(!lines.length){original=src;invalidateVerification();$('stage').textContent='Choose an operation';feedback(next.variable?'Equation ready. Choose your next move, or enter a simplified equation.':'Arithmetic practice ready. Choose an operation to set up both sides vertically.');resetHints();return true;}
+    if(!lines.length){original=src;invalidateVerification();$('stage').textContent='Choose your next move';feedback('Choose what you want to do to both sides.');resetHints();return true;}
     if(TutorMath.normalize(src)===TutorMath.normalize(lines.at(-1).plain)){feedback('This repeats the last line. Make a change before checking.',true);return false;}
     const prev=TutorMath.equation(lines.at(-1).plain),result=TutorMath.classifyStep(prev,next);
     if(result.kind==='simplification'){
@@ -968,7 +990,7 @@ function startTutorOp(op,raw){
     $('reciprocalCoach').hidden=!pending.needsReciprocal;
     $('pendingReciprocal').value='';$('pendingReciprocalOut').textContent='';
     $('signAnswer').value='';$('signCheck').hidden=!pending.sign;$('verticalWork').hidden=false;$('cancelOp').hidden=false;$('hintStep').hidden=true;$('stage').textContent='Work out both sides';
-    $('opval').value='';feedback('Operation set up. Fill in both results below the lines, then check.');$('leftAnswer').focus();return true;
+    $('opval').value='';updateCheckAvailability();feedback('Operation set up. Fill in both results below the lines, then check.');$('leftAnswer').focus();return true;
   }catch(e){feedback(e.message,true);return false;}
 }
 function checkPending(src){
@@ -979,7 +1001,10 @@ function checkPending(src){
     if(next.variable&&p.variable&&next.variable!==p.variable)throw Error('Keep the same variable in your results.');
     if(p.needsReciprocal&&!p.reciprocalChecked)throw Error('Enter and check the divisor’s reciprocal before checking this division step.');
     if(p.sign&&$('signAnswer').value!==p.sign){$('hintStep').hidden=false;if(!$('signAnswer').value)throw Error('Choose the result’s sign before continuing.');record('Sign arithmetic',false,'Recheck the signs in multiplication or division.');throw Error('Recheck the sign rule, then try again. Use Hint if you want a more specific reminder.');}
-    const ok=[TutorMath.same(next.l,p.expected[0]),TutorMath.same(next.r,p.expected[1])];
+    // Compare the normalized affine form of each side independently. This
+    // accepts 3x for (3x + 5) - 5, but cannot accept a merely equivalent
+    // whole equation that skips this displayed vertical operation.
+    const ok=[TutorMath.sameExpression(p.expected[0],next.l),TutorMath.sameExpression(p.expected[1],next.r)];
     setAnswerState('left',ok[0]?'correct':'incorrect');setAnswerState('right',ok[1]?'correct':'incorrect');
     if(!ok.every(Boolean)){
       $('hintStep').hidden=false;
@@ -990,10 +1015,10 @@ function checkPending(src){
     }
     stats.steps++;record(p.op==='+'||p.op==='-'?'Variable movement':'Scaling both sides',true);if(p.sign)record('Sign arithmetic',true);
     lastCheckedOperation={op:p.op,raw:p.raw,sides:p.sides,answers:[next.sides[0].trim(),next.sides[1].trim()]};
-    clearPending();invalidateVerification();feedback('Correct — both results check out. Your step is saved.');return true;
+    clearPending();invalidateVerification();feedback('Correct — both results check out. Choose what you want to do to both sides.');return true;
   }catch(e){feedback(e.message,true);return false;}
 }
-function appendTyped(src){const T=toLatex(src);lines.splice(editIdx===null?lines.length:editIdx,0,{tutorOperation:lastCheckedOperation,strokes:[],typed:true,src,tex:T,texD:T,plain:src,toks:[],slashMode:'frac'});editIdx=null;kb.value='';typedLive='';renderSheet();keepEquationWorkflowInView();}
+function appendTyped(src){const T=toLatex(src),insertAt=editIdx===null?lines.length:editIdx;attachCheckedTransition(insertAt);lines.splice(insertAt,0,{strokes:[],typed:true,src,tex:T,texD:T,plain:src,toks:[],slashMode:'frac'});editIdx=null;kb.value='';typedLive='';renderSheet();updateCheckAvailability();keepEquationWorkflowInView();}
 async function checkStudentStep(){
   if(pending){const l=$('leftAnswer').value.trim(),r=$('rightAnswer').value.trim();if(l||r){if(!l||!r){$('hintStep').hidden=false;feedback('Fill in both answer fields before checking. Each side is its own arithmetic problem.',true);return;}const src=`${l} = ${r}`;if(checkPending(src))appendTyped(src);return;}}
   if(kb.value.trim()){const src=kb.value.trim();if(acceptTutorLine(src))appendTyped(src);return;}
@@ -1002,8 +1027,8 @@ async function checkStudentStep(){
 }
 document.querySelectorAll('[data-sign]').forEach(b=>b.onclick=()=>{$('signAnswer').value=b.dataset.sign;document.querySelectorAll('[data-sign]').forEach(btn=>btn.setAttribute('aria-pressed',String(btn===b)));});
 $('checkStep').onclick=checkStudentStep;
-$('cancelOp').onclick=()=>{clearPending();feedback('Operation canceled. Choose your next move.');};
-for(const id of ['leftAnswer','rightAnswer']) $(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkStudentStep();}});
+$('cancelOp').onclick=()=>{clearPending();feedback('Operation canceled. Choose what you want to do to both sides.');};
+for(const id of ['leftAnswer','rightAnswer']) {$(id).addEventListener('input',updateCheckAvailability);$(id).addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();checkStudentStep();}});}
 $('hintStep').onclick=()=>{
   if(!lines.length){feedback('Enter an equation first so the hints match your work.');return;}
   if(hintLevel>=3){feedback('All three hints are shown. Try the fraction or reciprocal helper, then check your work.');return;}
@@ -1024,7 +1049,7 @@ $('checkPendingReciprocal').onclick=()=>{
   if(!pending||!pending.needsReciprocal)return;
   try{const divisor=TutorMath.constant(pending.raw),answer=TutorMath.constant($('pendingReciprocal').value);const ok=TutorMath.eq(TutorMath.mul(divisor,answer),TutorMath.one);pending.reciprocalChecked=ok;$('pendingReciprocalOut').textContent=ok?'✓ Reciprocal checked. Now calculate both sides.':'Try again. Swap numerator and denominator and keep the original sign.';if(!ok){$('hintStep').hidden=false;record('Reciprocal',false,'The reciprocal entered during a division step was incorrect.');}else record('Reciprocal',true);}catch(e){$('pendingReciprocalOut').textContent=e.message;}
 };
-$('tutorMode').onchange=()=>{clearPending();invalidateVerification();$('tutorPanel').hidden=!tutorOn();if(tutorOn()){
+$('tutorMode').onchange=()=>{clearPending();invalidateVerification();$('tutorPanel').hidden=!tutorOn();updateCheckAvailability();if(tutorOn()){
   // Existing free-writing history remains visible, but starts a separate checked problem.
   if(lines.length){try{TutorMath.equation(lines.at(-1).plain);original=lines.at(-1).plain;feedback('Tutor Mode starts from your latest equation. Earlier free-writing lines were not checked.');}catch{feedback('Your free-writing history is preserved. Choose New problem to start a supported equation.',true);}}
 }else feedback('Free writing enabled. Lines are saved without tutor checks.');};

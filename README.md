@@ -6,7 +6,7 @@ A student-led algebra workspace in one file: [`math-ink.html`](math-ink.html). O
 
 1. Type or handwrite the original equation, then press **Enter** or **Check My Step**. For example: `16 - 3p = 2/3p + 5`.
 2. Choose **+ − × ÷**, enter your operand, and select **Set up operation**. Each side appears as its own large, centered paper-style calculation: original side, operation underneath, horizontal rule, and an empty result field.
-3. Calculate and enter **both** results. **Check My Step** checks the sides independently. A correct side locks with a visible ✓ while an incorrect side stays editable; the checked vertical work remains in equation history. You cannot stack another operation until you finish or cancel this one.
+3. Calculate and enter **both** results. **Check My Step** appears only once both answers are present, then checks each normalized affine expression independently. A correct side locks with a visible ✓ while an incorrect side stays editable. The checked vertical work is retained in history directly after the source equation and before the resulting equation. You cannot stack another operation until you finish or cancel this one.
 4. Continue with another operation, or type/handwrite an equivalent next equation. Three progressive hints offer guidance without filling answers.
 5. Open **Verify your final answer**, enter the variable value you found, and set up substitution. Calculate both sides of the *original* equation yourself. The app checks your calculations and whether the sides agree.
 
@@ -14,7 +14,7 @@ Math Ink never displays a generated algebra solution or fills the answer fields.
 
 Tutor validation distinguishes two kinds of work. A direct simplification must preserve the value of the left and right expressions independently; if both calculations are correct but produce a false numerical statement, Tutor Mode explains that the original equation was already false. An algebra transformation with a variable must preserve the equation's solution set according to the affine parser. If one side or the both-sides operation is wrong, the line stays editable and Tutor Mode identifies where to recheck without supplying the missing equation. While vertical work is pending, the exact displayed operation must be completed before a later equivalent step is accepted.
 
-After a typed line is committed, Math Ink keeps the newest locked line and **Do to both sides** controls together in the viewport and places focus in the operation-value field without scrolling. The vertical workspace stays hidden until you select an operation and set it up.
+After a typed line is committed, Math Ink keeps the newest locked line and **Do to both sides** controls together in the viewport and places focus in the operation-value field without scrolling. The vertical workspace stays hidden until you select an operation and set it up. At rest, Tutor Mode simply prompts you to choose the next move; it does not show an active Check button or preselect an operation.
 
 ## Thinking tools
 

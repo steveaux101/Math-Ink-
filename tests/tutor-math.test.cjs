@@ -88,3 +88,26 @@ test('step classification coaches the side that breaks the transformation',()=>{
  assert.equal(M.classifyStep(M.equation('3x + 5 = 17'),M.equation('3x + 5 = 12')).kind,'incorrect-operation-both-sides');
  assert.equal(M.classifyStep(M.equation('7 - 6 = 12 - 6'),M.equation('2 = 7')).kind,'equivalent');
 });
+
+test('checked operations belong to their source equation in history',()=>{
+ assert.match(html,/source\.transitionAfter=lastCheckedOperation/);
+ assert.match(html,/row\.appendChild\(x\);\s*if\(ln\.transitionAfter\)/);
+ assert.doesNotMatch(html,/tutorOperation:/);
+});
+
+test('Tutor check controls follow checkable work and operation context',()=>{
+ assert.match(html,/id="checkStep" class="primary" hidden disabled/);
+ assert.match(html,/function updateCheckAvailability/);
+ assert.match(html,/What do you want to subtract\?/);
+ assert.match(html,/placeholder="Enter value"/);
+});
+
+test('vertical arithmetic compares normalized affine expressions independently',()=>{
+ const pass=[
+  ['(3x + 5) - 5','3x'], ['17 - 5','12'], ['6x / 3','2x'],
+  ['2x + 3x','5x'], ['(2/3)p + (1/3)p','p'], ['-3x + 3x','0'],
+ ];
+ const fail=[['(3x + 5) - 5','8x'],['17 - 5','22'],['6x / 3','3x']];
+ for(const [expected,answer] of pass)assert.ok(M.sameExpression(expected,answer),`${expected} = ${answer}`);
+ for(const [expected,answer] of fail)assert.ok(!M.sameExpression(expected,answer),`${expected} ≠ ${answer}`);
+});
