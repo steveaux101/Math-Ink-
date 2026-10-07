@@ -136,6 +136,7 @@
   .coach p{margin:0 0 8px}.coach .toolbar{margin-bottom:0}
   .history-operation{margin:12px 34px 4px;opacity:.9}.history-operation .arithmetic{padding:10px 16px}.history-operation .math-row{font-size:21px;min-height:38px;padding:4px}.history-operation .operation{padding-bottom:8px;margin-bottom:8px;border-bottom-width:2px}.history-operation .operation::before{font-size:20px;bottom:8px}.history-answer{font:700 22px ui-monospace,monospace;color:#23855b;text-align:right;padding:4px 6px}.history-answer::after{content:'  ✓';}
   #tutorFeedback{padding:12px;background:var(--accent-soft);border-radius:8px;margin-bottom:0;} #tutorFeedback.error{color:var(--warn);} #hints{font-size:14px;line-height:1.7;} .keypad{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin:14px 0;}.keypad button{font-size:19px;padding:8px 0;}
+  .precalc-tools{margin-top:14px;}.precalc-shortcuts{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0;}.precalc-shortcuts button{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;}.topic-list{display:grid;gap:7px;margin:12px 0;}.topic-row{display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);}.topic-row input{width:18px;height:18px;padding:0;accent-color:var(--accent);}.topic-row.done{color:var(--muted);text-decoration:line-through;}.precalc-mode #opbar,.precalc-mode #tutorPanel,.precalc-only[hidden]{display:none!important;}
   details{border-top:1px solid var(--line);padding:12px 0;} summary{cursor:pointer;font-weight:600;} .helper-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}.small-input{width:125px;max-width:100%;}.scratch-wrap{position:relative;height:210px;background-image:radial-gradient(var(--grid) 1px,transparent 1px);background-size:20px 20px;border:1px solid var(--line);border-radius:8px;margin:12px 0;} #progress{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;} .stat{padding:10px 16px;background:var(--bg);border-radius:8px;}.stat strong{display:block;font:26px Georgia,serif;} #skills{line-height:1.9;margin-top:10px;} #mistakeLog{font-size:13px;color:var(--muted);} #signCheck{padding:12px;background:var(--accent-soft);border-radius:8px;} [hidden]{display:none!important;} body.ink-hidden #board,body.ink-hidden #stripbar,body.ink-hidden #strip{display:none;} #opval{min-width:100px;} .line .x{opacity:1;} .line .eq{font-size:1.2em;}
   @media(max-width:600px){.wrap{padding:12px;}.helper-grid{grid-template-columns:1fr;gap:0;}.keypad{grid-template-columns:repeat(5,1fr);}.vertical-grid{gap:7px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);}.arithmetic{padding:12px 10px}.math-row,.math-input{font-size:19px}.operation::before{font-size:21px}.section-title{display:block;} .tutor-intro h2{font-size:27px;} #themeToggle{margin-left:0;} #status{width:100%;margin:0;} }
 
@@ -158,8 +159,8 @@
     <div class="eyebrow">YOUR WORK. YOUR NEXT MOVE.</div>
     <h2>Make the math make sense.</h2>
     <p>Choose a move, work out each side, then check your thinking.</p>
-    <div class="toolbar"><label class="toggle"><input id="tutorMode" type="checkbox" checked> Tutor Mode</label><button id="newProblem">New problem</button><label class="toggle"><input id="showInk" type="checkbox"> Handwriting input</label></div>
-    <p class="tip">Tutor checks one-variable linear equations with exact fractions. Use free writing for other math. In <code>2/3p</code>, the fraction is the coefficient of p.</p>
+    <div class="toolbar"><label class="toggle">Study <select id="studyMode"><option value="precalc" selected>Precalculus</option><option value="algebra">Algebra Tutor</option></select></label><label id="tutorToggle" class="toggle"><input id="tutorMode" type="checkbox" checked> Tutor Mode</label><button id="newProblem">New problem</button><label class="toggle"><input id="showInk" type="checkbox"> Handwriting input</label></div>
+    <p id="studyMessage" class="tip">Precalculus workspace records your own work. Build it up as you learn; it does not automatically solve problems for you.</p>
   </section>
 
   <div id="work" data-layout="paper">
@@ -204,6 +205,7 @@
 
   <section class="card" id="toolsPanel">
     <h2>02 / Thinking tools</h2>
+    <details id="precalcDetails" class="precalc-tools" open><summary>Precalculus workspace <span class="tip">function notation and a growing learning list</span></summary><p class="tip">Use these shortcuts in the selected equation field. Your lines are saved as a worksheet; switch to Algebra Tutor whenever you want its step checks.</p><div class="precalc-shortcuts" id="precalcShortcuts"><button type="button" data-insert="f(x) = ">f(x) =</button><button type="button" data-insert="y = ">y =</button><button type="button" data-insert="sin(x)">sin(x)</button><button type="button" data-insert="cos(x)">cos(x)</button><button type="button" data-insert="tan(x)">tan(x)</button><button type="button" data-insert="log(x)">log(x)</button><button type="button" data-insert="sqrt(x)">√x</button><button type="button" data-insert="theta">θ</button></div><div id="precalcTopics" class="topic-list" aria-live="polite"></div><div class="toolbar"><input id="newTopic" type="text" placeholder="Add a topic you learned" aria-label="Topic you learned"><button id="addTopic" type="button">Add topic</button></div></details>
     <details open><summary>Math keypad <span class="tip">writes into your selected input</span></summary><div id="keypad" class="keypad"></div></details>
     <div class="helper-grid">
       <details><summary>Fraction / LCD helper</summary><p class="tip">Enter two denominators and find their least common denominator. Then practice an equivalent fraction.</p>
@@ -670,7 +672,7 @@ async function commit() {
   slashMode = 'frac'; $('slashMode').value = slashMode;
   editIdx = null; strokes = []; redraw();
   render([]); if(!tutorOn()) setStatus('Locked · draw the next line');
-  if(tutorOn()) keepEquationWorkflowInView(); else keepInView();
+  if(tutorOn() || studyMode === 'precalc') keepEquationWorkflowInView({focusOperation:false}); else keepInView();
   return true;
 }
 let editIdx = null;
@@ -806,7 +808,7 @@ kb.addEventListener('keydown', e => {
   const insertAt=editIdx === null ? lines.length : editIdx;attachCheckedTransition(insertAt);
   lines.splice(insertAt, 0, { strokes: [], typed: true, src, tex: T, texD: T, plain: src, toks: [], slashMode: 'frac' });
   editIdx = null; kb.value = ''; typedLive = ''; renderSheet();updateCheckAvailability();
-  if(tutorOn()) keepEquationWorkflowInView(); else keepInView();
+  if(tutorOn() || studyMode === 'precalc') keepEquationWorkflowInView({focusOperation:false}); else keepInView();
 });
 
 /* click a '?' in any typeset line and type its value */
@@ -945,8 +947,25 @@ let pending = null, original = null, hintLevel = 0, verified = false, substituti
 const defaultStats = () => ({steps:0,mistakes:0,hints:0,solved:0,skills:{},log:[]});
 let stats = defaultStats();
 try {const saved=JSON.parse(localStorage.getItem('mathink.tutor.progress'));if(saved&&['steps','mistakes','hints','solved'].every(k=>Number.isSafeInteger(saved[k])&&saved[k]>=0)&&saved.skills&&typeof saved.skills==='object'&&Array.isArray(saved.log)) stats=saved;} catch {}
-const tutorOn = () => $('tutorMode').checked;
+let studyMode = 'precalc';
+try { studyMode = localStorage.getItem('mathink.studyMode') || 'precalc'; } catch {}
+const tutorOn = () => studyMode === 'algebra' && $('tutorMode').checked;
 function feedback(msg,error=false){$('tutorFeedback').textContent=msg;$('tutorFeedback').classList.toggle('error',error);setStatus(msg,error);}
+function setStudyMode(mode, announce=false) {
+  studyMode = mode === 'algebra' ? 'algebra' : 'precalc';
+  document.body.classList.toggle('precalc-mode', studyMode === 'precalc');
+  $('studyMode').value = studyMode;
+  $('tutorToggle').hidden = studyMode === 'precalc';
+  $('precalcDetails').open = studyMode === 'precalc';
+  $('studyMessage').textContent = studyMode === 'precalc'
+    ? 'Precalculus workspace records your own work. Build it up as you learn; it does not automatically solve problems for you.'
+    : 'Algebra Tutor checks one-variable linear equations with exact fractions. In 2/3p, the fraction is the coefficient of p.';
+  if (studyMode === 'precalc') { clearPending(); $('tutorPanel').hidden = true; }
+  else { $('tutorPanel').hidden = !$('tutorMode').checked; }
+  try { localStorage.setItem('mathink.studyMode', studyMode); } catch {}
+  updateCheckAvailability();
+  if (announce) feedback(studyMode === 'precalc' ? 'Precalculus workspace is ready. Add your work one line at a time.' : 'Algebra Tutor is ready. Enter a one-variable linear equation.');
+}
 function updateProgress(){
   const el=$('progress');el.replaceChildren();
   for(const [key,label] of [['steps','Checked steps'],['mistakes','Retry attempts'],['hints','Hints used'],['solved','Verified problems']]){const s=document.createElement('div');s.className='stat';const n=document.createElement('strong');n.textContent=stats[key];s.append(n,document.createTextNode(label));el.append(s);}
@@ -957,6 +976,7 @@ function updateProgress(){
 function record(skill,ok,detail=''){if(!stats.skills[skill]||typeof stats.skills[skill]!=='object')stats.skills[skill]={correct:0,retry:0};const entry=stats.skills[skill];entry[ok?'correct':'retry']=(Number(entry[ok?'correct':'retry'])||0)+1;if(!ok){stats.mistakes++;stats.log.push(`${skill}: ${detail}`);stats.log=stats.log.slice(-40);}updateProgress();}
 function resetHints(){hintLevel=0;$('hints').replaceChildren();}
 function updateCheckAvailability(){
+  if(!tutorOn()){$('checkStep').hidden=true;$('checkStep').disabled=true;return;}
   const typed=Boolean(kb?.value.trim()),ink=strokes.length>0;
   const pendingReady=Boolean(pending&&$('leftAnswer').value.trim()&&$('rightAnswer').value.trim());
   const ready=pendingReady||(!pending&&(typed||ink));
@@ -1077,6 +1097,7 @@ $('checkPendingReciprocal').onclick=()=>{
   if(!pending||!pending.needsReciprocal)return;
   try{const divisor=TutorMath.constant(pending.raw),answer=TutorMath.constant($('pendingReciprocal').value);const ok=TutorMath.eq(TutorMath.mul(divisor,answer),TutorMath.one);pending.reciprocalChecked=ok;$('pendingReciprocalOut').textContent=ok?'✓ Reciprocal checked. Now calculate both sides.':'Try again. Swap numerator and denominator and keep the original sign.';if(!ok){$('hintStep').hidden=false;record('Reciprocal',false,'The reciprocal entered during a division step was incorrect.');}else record('Reciprocal',true);}catch(e){$('pendingReciprocalOut').textContent=e.message;}
 };
+$('studyMode').onchange=e=>setStudyMode(e.target.value,true);
 $('tutorMode').onchange=()=>{clearPending();invalidateVerification();$('tutorPanel').hidden=!tutorOn();updateCheckAvailability();if(tutorOn()){
   // Existing free-writing history remains visible, but starts a separate checked problem.
   if(lines.length){try{TutorMath.equation(lines.at(-1).plain);original=lines.at(-1).plain;feedback('Tutor Mode starts from your latest equation. Earlier free-writing lines were not checked.');}catch{feedback('Your free-writing history is preserved. Choose New problem to start a supported equation.',true);}}
@@ -1084,6 +1105,15 @@ $('tutorMode').onchange=()=>{clearPending();invalidateVerification();$('tutorPan
 $('showInk').onchange=()=>{document.body.classList.toggle('ink-hidden',!$('showInk').checked);resize();};document.body.classList.add('ink-hidden');
 let keypadTarget=kb;
 document.addEventListener('focusin',e=>{if(e.target.matches('input[type="text"],input:not([type])'))keypadTarget=e.target;});
+function insertPrecalc(text){const input=keypadTarget||kb;const s=input.selectionStart??input.value.length,e=input.selectionEnd??s;input.setRangeText(text,s,e,'end');input.focus();input.dispatchEvent(new Event('input',{bubbles:true}));}
+document.querySelectorAll('#precalcShortcuts [data-insert]').forEach(button=>button.onclick=()=>insertPrecalc(button.dataset.insert));
+const defaultPrecalcTopics=['Functions and notation','Domain and range','Function transformations','Polynomial and rational functions','Exponential and logarithmic functions','Trigonometry'];
+let precalcTopics=defaultPrecalcTopics.map(name=>({name,done:false}));
+try{const saved=JSON.parse(localStorage.getItem('mathink.precalcTopics'));if(Array.isArray(saved)&&saved.every(item=>item&&typeof item.name==='string'&&typeof item.done==='boolean'))precalcTopics=saved.slice(0,50);}catch{}
+function renderPrecalcTopics(){const list=$('precalcTopics');list.replaceChildren();precalcTopics.forEach((topic,index)=>{const label=document.createElement('label');label.className='topic-row'+(topic.done?' done':'');const box=document.createElement('input');box.type='checkbox';box.checked=topic.done;box.onchange=()=>{topic.done=box.checked;try{localStorage.setItem('mathink.precalcTopics',JSON.stringify(precalcTopics));}catch{}renderPrecalcTopics();};label.append(box,document.createTextNode(topic.name));list.append(label);});}
+$('addTopic').onclick=()=>{const name=$('newTopic').value.trim();if(!name)return;if(precalcTopics.some(topic=>topic.name.toLowerCase()===name.toLowerCase())){$('newTopic').focus();return;}precalcTopics.push({name,done:false});$('newTopic').value='';try{localStorage.setItem('mathink.precalcTopics',JSON.stringify(precalcTopics));}catch{}renderPrecalcTopics();};
+$('newTopic').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();$('addTopic').click();}});
+renderPrecalcTopics();
 for(const key of ['7','8','9','+','−','4','5','6','×','÷','1','2','3','(',')','0','.','/','x','p','r','=','←','Clear']){const b=document.createElement('button');b.textContent=key;b.setAttribute('aria-label',key==='←'?'Backspace':key);b.onmousedown=e=>e.preventDefault();b.onclick=()=>{const input=keypadTarget;const s=input.selectionStart??input.value.length,e=input.selectionEnd??s;if(key==='Clear')input.value='';else if(key==='←')input.setRangeText('',s===e?Math.max(0,s-1):s,e,'end');else input.setRangeText({'−':'-','×':'*','÷':'/'}[key]||key,s,e,'end');input.focus();input.dispatchEvent(new Event('input',{bubbles:true}));};$('keypad').append(b);}
 function helper(out,skill,fn){try{fn();}catch(e){$(out).textContent=e.message;}}
 $('lcdBtn').onclick=()=>helper('lcdOut','Fractions',()=>{const vals=['denA','denB'].map(id=>{if(!/^[1-9]\d{0,5}$/.test($(id).value.trim()))throw Error('Use positive whole-number denominators up to 999999.');return BigInt($(id).value.trim());});const lcd=vals[0]/TutorMath.gcd(...vals)*vals[1];$('lcdOut').textContent=`LCD: ${lcd}. Multiply each numerator and denominator by the same factor.`;$('fracDen').value=String(lcd);});
@@ -1109,6 +1139,7 @@ const scratchPoint=e=>{const r=scratch.getBoundingClientRect();return[e.clientX-
 scratch.onpointerdown=e=>{if(e.pointerType==='mouse'&&e.button!==0)return;scratch.setPointerCapture(e.pointerId);scratchCurrent=[scratchPoint(e)];scratchStrokes.push(scratchCurrent);drawScratch();};scratch.onpointermove=e=>{if(scratchCurrent){scratchCurrent.push(scratchPoint(e));drawScratch();}};scratch.onpointerup=scratch.onpointercancel=()=>scratchCurrent=null;
 $('scratchUndo').onclick=()=>{scratchStrokes.pop();drawScratch();};$('scratchClear').onclick=()=>{scratchStrokes=[];drawScratch();};$('scratchDetails').ontoggle=drawScratch;addEventListener('resize',drawScratch);matchMedia('(prefers-color-scheme: dark)').addEventListener('change',drawScratch);
 updateProgress();
+setStudyMode(studyMode);
 
 window.mathInk = { commit, math: TutorMath, get pending() { return pending; }, get stats() { return stats; }, get lines() { return lines; }, get strokes() { return strokes; }, set strokes(v) { strokes = v; redraw(); }, convert, cache };
 resize();
