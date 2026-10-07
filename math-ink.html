@@ -29,7 +29,7 @@
   button:hover { border-color: var(--accent); }
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   label.toggle { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; }
-  #status { margin-left: auto; font-size: 13px; color: var(--muted); }
+  #status { font-size: 13px; color: var(--muted); }
   #status.err { color: var(--warn); }
   #board {
     position: relative; height: 36vh; min-height: 230px; background: var(--panel);
@@ -104,6 +104,11 @@
   .tip { color: var(--muted); font-size: 13px; margin-top: 12px; }
   :root { --accent:#27665b; --accent-soft:#e7f1ea; }
   @media(prefers-color-scheme:dark){:root{--accent:#8ccab5;--accent-soft:#263e36;}}
+  /* A deliberate palette selection takes priority over the system preference. */
+  html[data-theme="paper"] { color-scheme: light; --bg:#f6f5f1; --panel:#fff; --ink:#1b1b1f; --muted:#6b6b73; --line:#dcdad2; --accent:#27665b; --accent-soft:#e7f1ea; --draw:#1b1b1f; --grid:#e6e4dc; --warn:#b4421d; }
+  html[data-theme="ocean"] { color-scheme: light; --bg:#eef4f8; --panel:#fff; --ink:#142537; --muted:#536779; --line:#c8d8e3; --accent:#176b87; --accent-soft:#dceef5; --draw:#142537; --grid:#d7e5ed; --warn:#a43d31; }
+  html[data-theme="midnight"] { color-scheme: dark; --bg:#151923; --panel:#202735; --ink:#edf2fa; --muted:#aab6c7; --line:#394657; --accent:#79b8ff; --accent-soft:#253a56; --draw:#f5f8fd; --grid:#2e3948; --warn:#ff9f89; }
+  #themeToggle { margin-left:auto; min-width:112px; }
   .wrap {max-width:1080px;padding:24px;} header h1{font-size:24px;letter-spacing:-1px;}
   .tutor-intro{margin-bottom:18px;padding:26px;background:var(--accent-soft);}
   .tutor-intro h2{font:normal 32px/1.2 Georgia,serif;color:var(--ink);text-transform:none;letter-spacing:-.8px;margin:8px 0;}
@@ -132,7 +137,7 @@
   .history-operation{margin:12px 34px 4px;opacity:.9}.history-operation .arithmetic{padding:10px 16px}.history-operation .math-row{font-size:21px;min-height:38px;padding:4px}.history-operation .operation{padding-bottom:8px;margin-bottom:8px;border-bottom-width:2px}.history-operation .operation::before{font-size:20px;bottom:8px}.history-answer{font:700 22px ui-monospace,monospace;color:#23855b;text-align:right;padding:4px 6px}.history-answer::after{content:'  ✓';}
   #tutorFeedback{padding:12px;background:var(--accent-soft);border-radius:8px;margin-bottom:0;} #tutorFeedback.error{color:var(--warn);} #hints{font-size:14px;line-height:1.7;} .keypad{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px;margin:14px 0;}.keypad button{font-size:19px;padding:8px 0;}
   details{border-top:1px solid var(--line);padding:12px 0;} summary{cursor:pointer;font-weight:600;} .helper-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}.small-input{width:125px;max-width:100%;}.scratch-wrap{position:relative;height:210px;background-image:radial-gradient(var(--grid) 1px,transparent 1px);background-size:20px 20px;border:1px solid var(--line);border-radius:8px;margin:12px 0;} #progress{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0;} .stat{padding:10px 16px;background:var(--bg);border-radius:8px;}.stat strong{display:block;font:26px Georgia,serif;} #skills{line-height:1.9;margin-top:10px;} #mistakeLog{font-size:13px;color:var(--muted);} #signCheck{padding:12px;background:var(--accent-soft);border-radius:8px;} [hidden]{display:none!important;} body.ink-hidden #board,body.ink-hidden #stripbar,body.ink-hidden #strip{display:none;} #opval{min-width:100px;} .line .x{opacity:1;} .line .eq{font-size:1.2em;}
-  @media(max-width:600px){.wrap{padding:12px;}.helper-grid{grid-template-columns:1fr;gap:0;}.keypad{grid-template-columns:repeat(5,1fr);}.vertical-grid{gap:7px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);}.arithmetic{padding:12px 10px}.math-row,.math-input{font-size:19px}.operation::before{font-size:21px}.section-title{display:block;} .tutor-intro h2{font-size:27px;} #status{width:100%;margin:0;} }
+  @media(max-width:600px){.wrap{padding:12px;}.helper-grid{grid-template-columns:1fr;gap:0;}.keypad{grid-template-columns:repeat(5,1fr);}.vertical-grid{gap:7px;grid-template-columns:minmax(0,1fr) 18px minmax(0,1fr);}.arithmetic{padding:12px 10px}.math-row,.math-input{font-size:19px}.operation::before{font-size:21px}.section-title{display:block;} .tutor-intro h2{font-size:27px;} #themeToggle{margin-left:0;} #status{width:100%;margin:0;} }
 
 </style>
 </head>
@@ -145,6 +150,7 @@
     <button id="next" class="primary">Save / Check ⏎</button>
     <label class="toggle">Layout <select id="layoutSel"><option value="paper">Paper</option><option value="inline">Inline row</option><option value="classic">Classic</option></select></label>
     <label class="toggle"><input type="checkbox" id="showTok" checked> show detected symbols</label>
+    <button id="themeToggle" type="button" aria-label="Change color theme" title="Change color theme">Theme: Paper</button>
     <div id="status">Draw an equation</div>
   </header>
 
@@ -226,6 +232,28 @@
 (() => {
 'use strict';
 const $ = id => document.getElementById(id);
+const themes = [
+  {id:'paper', label:'Paper'},
+  {id:'ocean', label:'Ocean'},
+  {id:'midnight', label:'Midnight'}
+];
+function applyTheme(id) {
+  const theme = themes.find(item => item.id === id) || themes[0];
+  document.documentElement.dataset.theme = theme.id;
+  $('themeToggle').textContent = `Theme: ${theme.label}`;
+  $('themeToggle').setAttribute('aria-label', `Color theme: ${theme.label}. Activate to change.`);
+  try { localStorage.setItem('mathink.theme', theme.id); } catch {}
+}
+let savedTheme = 'paper';
+try { savedTheme = localStorage.getItem('mathink.theme') || 'paper'; } catch {}
+applyTheme(savedTheme);
+$('themeToggle').onclick = () => {
+  const current = document.documentElement.dataset.theme || 'paper';
+  const index = themes.findIndex(item => item.id === current);
+  applyTheme(themes[(index + 1) % themes.length].id);
+  redraw();
+  drawScratch();
+};
 const cv = $('cv'), ctx = cv.getContext('2d');
 const board = $('board'), overlay = $('overlay');
 
